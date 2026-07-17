@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Plugins\Earsip\Admin;
+namespace App\Http\Controllers\Plugins\EOffice\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Plugins\Earsip\Briefing;
-use App\Models\Plugins\Earsip\BriefingChecklist;
-use App\Models\Plugins\Earsip\BriefingDisposisi;
-use App\Models\Plugins\Earsip\Pejabat;
-use App\Models\Plugins\Earsip\WaSender;
+use App\Models\Plugins\EOffice\Briefing;
+use App\Models\Plugins\EOffice\BriefingChecklist;
+use App\Models\Plugins\EOffice\BriefingDisposisi;
+use App\Models\Plugins\EOffice\Pejabat;
+use App\Models\Plugins\EOffice\WaSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +16,7 @@ class BriefingController extends Controller
 {
     public function index()
     {
-        $user = earsip_user();
+        $user = e_office_user();
         $isKadis = false; // logic to determine if current user is Kadis
         
         $pejabat = $user->pejabat;
@@ -37,12 +37,12 @@ class BriefingController extends Controller
                 ->get();
         }
 
-        return view('earsip::admin.briefing.index', compact('briefings', 'isKadis', 'pejabat'));
+        return view('e-office::admin.briefing.index', compact('briefings', 'isKadis', 'pejabat'));
     }
 
     public function create()
     {
-        $pejabatUser = earsip_user()?->pejabat;
+        $pejabatUser = e_office_user()?->pejabat;
         
         // Ambil bawahan langsung (bawahan pertama)
         $pejabats = Pejabat::with('tupoksis')
@@ -50,7 +50,7 @@ class BriefingController extends Controller
             ->whereNotNull('user_id')
             ->get();
             
-        return view('earsip::admin.briefing.create', compact('pejabats'));
+        return view('e-office::admin.briefing.create', compact('pejabats'));
     }
 
     public function store(Request $request)
@@ -69,7 +69,7 @@ class BriefingController extends Controller
             DB::beginTransaction();
 
             $briefing = Briefing::create([
-                'user_id' => earsip_user()->id,
+                'user_id' => e_office_user()->id,
                 'judul' => $request->judul,
                 'pesan' => $request->pesan_masal,
                 'status' => 'in_progress'
@@ -88,7 +88,7 @@ class BriefingController extends Controller
 
 
 
-            $pengirim_id = earsip_user()->pejabat?->id;
+            $pengirim_id = e_office_user()->pejabat?->id;
 
             foreach ($request->penerima_ids as $penerima_id) {
                 $disposisi = BriefingDisposisi::create([
@@ -129,13 +129,13 @@ class BriefingController extends Controller
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Baru*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (earsip_user()->pejabat?->nama ?? earsip_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
+                        'text' => "*Tugas/Briefing Baru*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
                     ]);
                 }
             }
 
             DB::commit();
-            return redirect(plugin_route('earsip.briefing.index'))->with('success', 'Briefing/Tugas berhasil dibuat dan diteruskan.');
+            return redirect(plugin_route('e-office.briefing.index'))->with('success', 'Briefing/Tugas berhasil dibuat dan diteruskan.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -147,8 +147,8 @@ class BriefingController extends Controller
     {
         $briefing = Briefing::with(['checklists', 'disposisis.pengirim', 'disposisis.penerima'])->findOrFail($id);
         
-        $pejabat = earsip_user()->pejabat;
-        $isKadis = ($briefing->user_id == earsip_user()->id);
+        $pejabat = e_office_user()->pejabat;
+        $isKadis = ($briefing->user_id == e_office_user()->id);
 
         $myDisposisi = null;
         if (!$isKadis) {
@@ -167,7 +167,7 @@ class BriefingController extends Controller
             ->whereNotIn('id', $penerimaSudahAda)
             ->get();
 
-        return view('earsip::admin.briefing.show', compact('briefing', 'isKadis', 'myDisposisi', 'semuaPejabat', 'pejabat'));
+        return view('e-office::admin.briefing.show', compact('briefing', 'isKadis', 'myDisposisi', 'semuaPejabat', 'pejabat'));
     }
 
     public function teruskan(Request $request, $id)
@@ -181,7 +181,7 @@ class BriefingController extends Controller
         ]);
 
         $briefing = Briefing::findOrFail($id);
-        $pejabat = earsip_user()->pejabat;
+        $pejabat = e_office_user()->pejabat;
         $pengirim_id = $pejabat?->id;
 
         $myDisposisi = BriefingDisposisi::where('briefing_id', $briefing->id)
@@ -233,7 +233,7 @@ class BriefingController extends Controller
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Diteruskan*\n\nJudul: " . $briefing->judul . "\nDari: " . ($pejabat?->nama ?? earsip_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
+                        'text' => "*Tugas/Briefing Diteruskan*\n\nJudul: " . $briefing->judul . "\nDari: " . ($pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
                     ]);
                 }
             }
@@ -248,7 +248,7 @@ class BriefingController extends Controller
     public function balas(Request $request, $id)
     {
         $briefing = Briefing::findOrFail($id);
-        $pejabat = earsip_user()->pejabat;
+        $pejabat = e_office_user()->pejabat;
 
         $disposisi = BriefingDisposisi::where('briefing_id', $briefing->id)
             ->where('penerima_id', $pejabat?->id)
@@ -294,7 +294,7 @@ class BriefingController extends Controller
         $disposisi = BriefingDisposisi::findOrFail($id);
         
         $briefing = $disposisi->briefing;
-        if ($briefing->user_id != earsip_user()->id) abort(403);
+        if ($briefing->user_id != e_office_user()->id) abort(403);
 
         $disposisi->update(['feedback_kadis' => $request->feedback_kadis]);
 
@@ -304,7 +304,7 @@ class BriefingController extends Controller
     public function validasi($id)
     {
         $disposisi = BriefingDisposisi::findOrFail($id);
-        $pejabat = earsip_user()->pejabat;
+        $pejabat = e_office_user()->pejabat;
         
         if ($disposisi->pengirim_id != $pejabat?->id) {
             abort(403, 'Akses ditolak.');
@@ -318,7 +318,7 @@ class BriefingController extends Controller
     public function close(Request $request, $id)
     {
         $briefing = Briefing::findOrFail($id);
-        if ($briefing->user_id !== earsip_user()->id) {
+        if ($briefing->user_id !== e_office_user()->id) {
             return back()->with('error', 'Akses ditolak.');
         }
 
@@ -326,6 +326,6 @@ class BriefingController extends Controller
             'status' => 'completed'
         ]);
 
-        return redirect(plugin_route('earsip.briefing.index'))->with('success', 'Briefing/Tugas diselesaikan.');
+        return redirect(plugin_route('e-office.briefing.index'))->with('success', 'Briefing/Tugas diselesaikan.');
     }
 }

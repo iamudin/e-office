@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Plugins\Earsip\Admin;
+namespace App\Http\Controllers\Plugins\EOffice\Admin;
 use setasign\Fpdi\Fpdi;
 use Illuminate\Http\Request;
 use Leazycms\FLC\Models\File;
 use Illuminate\Http\UploadedFile;
-use App\Models\Plugins\Earsip\Arsip;
-use App\Models\Plugins\Earsip\WaSender;
-use App\Models\Plugins\Earsip\Pejabat;
-use App\Models\Plugins\Earsip\Disposisi;
+use App\Models\Plugins\EOffice\Arsip;
+use App\Models\Plugins\EOffice\WaSender;
+use App\Models\Plugins\EOffice\Pejabat;
+use App\Models\Plugins\EOffice\Disposisi;
 use App\Http\Controllers\Controller;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Support\Facades\File as Filestorage;
@@ -17,7 +17,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use App\Http\Controllers\Plugins\Earsip\Middleware\RedirectMiddleware;
+use App\Http\Controllers\Plugins\EOffice\Middleware\RedirectMiddleware;
 
 class SuratMasukController extends Controller implements HasMiddleware
 {
@@ -70,7 +70,7 @@ class SuratMasukController extends Controller implements HasMiddleware
     {
         $surat = Arsip::with('disposisis.pejabat', 'kadis')->find($arsip);
         $penerima = Pejabat::select('id', 'jabatan', 'nama')->wherePenerimaDisposisi(1)->orderBy('jabatan', 'desc')->get();
-        $pdf = PDF::loadView('earsip::pdf.disposisis', [
+        $pdf = PDF::loadView('e-office::pdf.disposisis', [
             'data' => $surat,
             'penerima' => $penerima
         ]);
@@ -115,7 +115,7 @@ class SuratMasukController extends Controller implements HasMiddleware
         })->with('kadis')->find($surat);
         $penerima = Pejabat::select('id', 'jabatan', 'nama')->wherePenerimaDisposisi(1)->orderBy('jabatan', 'desc')->get();
         $disposisi = Disposisi::find($disposisi_id);
-        $pdf = PDF::loadView('earsip::pdf.disposisi', [
+        $pdf = PDF::loadView('e-office::pdf.disposisi', [
             'data' => $surat,
             'penerima' => $penerima
         ]);
@@ -155,23 +155,23 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function create()
     {
-        earsip_auth_check();
-        return view('earsip::admin.surat-masuk.form', ['data' => null, 'noagenda' => Arsip::count() + 1]);
+        e_office_auth_check();
+        return view('e-office::admin.surat-masuk.form', ['data' => null, 'noagenda' => Arsip::count() + 1]);
     }
 
     public function edit(Arsip $surat_masuk)
     {
-        earsip_auth_check();
-        return view('earsip::admin.surat-masuk.form', ['data' => $surat_masuk]);
+        e_office_auth_check();
+        return view('e-office::admin.surat-masuk.form', ['data' => $surat_masuk]);
     }
 
     public function disposisi(Request $request, Arsip $arsip)
     {
-        earsip_auth_check();
-        if ($request->perbarui_dipsosisi && earsip_user()->is_kadis()) {
+        e_office_auth_check();
+        if ($request->perbarui_dipsosisi && e_office_user()->is_kadis()) {
             $arsip->update(['disposisi_pada' => null]);
             $arsip->disposisis()->forceDelete();
-            return redirect(plugin_route('earsip.surat-masuk.show', $arsip->id))->with('success', 'Disposisi berhasil diperbarui');
+            return redirect(plugin_route('e-office.surat-masuk.show', $arsip->id))->with('success', 'Disposisi berhasil diperbarui');
         }
         if ($request->cetak_disposisi) {
             $file = $this->arsip_utama($request, $arsip->id);
@@ -185,7 +185,7 @@ class SuratMasukController extends Controller implements HasMiddleware
             $pejabat = Pejabat::find($request->pejabat_id);
             $d = $arsip->disposisis()->updateOrCreate([
                 'arsip_id' => $arsip->id,
-                'pejabat_id' => earsip_user()->pejabat->id,
+                'pejabat_id' => e_office_user()->pejabat->id,
             ], [
                 'whatsapp_pejabat' => $pejabat->id,
                 'teruskan_ke_whatsapp_pada' => now(),
@@ -202,7 +202,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'type' => 'file',
                 'text' => 'Disposisi surat masuk untuk ditindak lanjuti',
             ]);
-            return redirect(plugin_route('earsip.surat-masuk.index'))->with('success', 'Surat berhasil diteruskan ke ke ' . $pejabat->jabatan);
+            return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Surat berhasil diteruskan ke ke ' . $pejabat->jabatan);
         }
 
         if ($request->paraf_kasubag && $request->teruskan_ke_kadis) {
@@ -221,17 +221,17 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'to_user' => $pejabat->user_id,
                 'title' => 'Surat Baru NO. ' . $request->nomor_surat,
                 'message' => 'Ada surat Terbaru untuk anda',
-                'url' => plugin_route('earsip.surat-masuk.show', $arsip->id),
+                'url' => plugin_route('e-office.surat-masuk.show', $arsip->id),
             ]);
             WaSender::dispatch([
                 'to' => $pejabat->nohp,
                 'text' => "Surat masuk dari " . $arsip->surat_dari . " untuk di disposisi di link berikut :\n" . $notif,
             ]);
-            return redirect(plugin_route('earsip.surat-masuk.index'))->with('success', 'Surat berhasil di paraf dan diteruskan ke Kepala Dinas');
+            return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Surat berhasil di paraf dan diteruskan ke Kepala Dinas');
         }
 
         if ($request->respon_disposisi) {
-            $arsip->disposisis()->whereBelongsTo(earsip_user()->pejabat)->update([
+            $arsip->disposisis()->whereBelongsTo(e_office_user()->pejabat)->update([
                 'catatan' => $request->catatan,
                 'dibalas_pada' => now(),
             ]);
@@ -257,7 +257,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                     'to_user' => $row->user_id,
                     'title' => 'Surat Baru NO. ' . $arsip->nomor_surat,
                     'message' => 'Ada surat Terbaru untuk anda',
-                    'url' => plugin_route('earsip.surat-masuk.show', $arsip->id),
+                    'url' => plugin_route('e-office.surat-masuk.show', $arsip->id),
                 ]);
                 $arsip->disposisis()->updateOrCreate([
                     'arsip_id' => $arsip->id,
@@ -269,34 +269,34 @@ class SuratMasukController extends Controller implements HasMiddleware
                     'text' => "Disposisi Kepala Dinas surat masuk dari " . $arsip->surat_dari . ".\n Klik tautan berikut untuk melihat.\n" . $notif,
                 ]);
             }
-            return redirect(plugin_route('earsip.surat-masuk.index'))->with('success', 'Surat berhasil di disposisi');
+            return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Surat berhasil di disposisi');
         }
     }
 
     public function show($surat)
     {
-        earsip_auth_check();
+        e_office_auth_check();
         $surat = Arsip::with('disposisis.pejabat')->find($surat);
         if (empty($surat)) {
-            return redirect(plugin_route('earsip.surat-masuk.index'))->with('danger', 'Surat Tidak ditemukan');
+            return redirect(plugin_route('e-office.surat-masuk.index'))->with('danger', 'Surat Tidak ditemukan');
         }
-        if (!in_array(earsip_user()->pejabat->alias_jabatan, ['KASUBAGUMUM', 'KADIS', 'OPERATOR'])) {
-            $cek = $surat->disposisis->where('pejabat_id', earsip_user()->pejabat->id)->first();
+        if (!in_array(e_office_user()->pejabat->alias_jabatan, ['KASUBAGUMUM', 'KADIS', 'OPERATOR'])) {
+            $cek = $surat->disposisis->where('pejabat_id', e_office_user()->pejabat->id)->first();
             if (empty($cek)) {
-                return redirect(plugin_route('earsip.surat-masuk.index'))->with('danger', 'Surat Tidak ditemukan');
+                return redirect(plugin_route('e-office.surat-masuk.index'))->with('danger', 'Surat Tidak ditemukan');
             }
             if (is_null($cek->dibaca_pada)) {
                 $cek->update(['dibaca_pada' => now()]);
             }
         }
-        if (earsip_user()->is_kabid()) {
-            $staff = Pejabat::whereAtasanId(earsip_user()->pejabat->id)->whereHas('user', function ($u) {
+        if (e_office_user()->is_kabid()) {
+            $staff = Pejabat::whereAtasanId(e_office_user()->pejabat->id)->whereHas('user', function ($u) {
                 $u->whereStatus('active');
             })->get();
         }
         $surat->notificationCleaner();
         return view(
-            'earsip::admin.surat-masuk.show',
+            'e-office::admin.surat-masuk.show',
             [
                 'data' => $surat,
                 'pejabat' => Pejabat::wherePenerimaDisposisi(1)->whereNotIn('alias_jabatan', ['OPERATOR', 'KASUBAG', 'KADIS'])->orderBy('alias_jabatan', 'desc')->whereHas('user', function ($u) {
@@ -309,8 +309,8 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
-        earsip_auth_check();
-        $data = earsip_user()->arsips()->create([
+        e_office_auth_check();
+        $data = e_office_user()->arsips()->create([
             'tanggal_surat' => $request->tanggal_surat,
             'nomor_surat' => $request->nomor_surat,
             'nomor_agenda' => Arsip::count() + 1,
@@ -337,7 +337,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                     'to_user' => $pejabat->user_id,
                     'title' => 'Surat Baru NO. ' . $request->nomor_surat,
                     'message' => 'Ada surat Terbaru untuk anda',
-                    'url' => plugin_route('earsip.surat-masuk.show', $data->id),
+                    'url' => plugin_route('e-office.surat-masuk.show', $data->id),
                 ]);
                 WaSender::dispatch([
                     'to' => $pejabat->nohp,
@@ -345,12 +345,12 @@ class SuratMasukController extends Controller implements HasMiddleware
                 ]);
             }
         }
-        return redirect(plugin_route('earsip.surat-masuk.index'))->with('success', 'Berhasil dibuat');
+        return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Berhasil dibuat');
     }
 
     public function update(Request $request, Arsip $surat_masuk)
     {
-        earsip_auth_check();
+        e_office_auth_check();
         $surat_masuk->update([
             'tanggal_surat' => $request->tanggal_surat,
             'nomor_surat' => $request->nomor_surat,
@@ -373,18 +373,18 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function index()
     {
-        earsip_auth_check();
+        e_office_auth_check();
 
         $data = [];
-        return view('earsip::admin.surat-masuk.index', $data);
+        return view('e-office::admin.surat-masuk.index', $data);
     }
 
     public function datatable(Request $request)
     {
-        earsip_auth_check();
-        $user = earsip_user();
+        e_office_auth_check();
+        $user = e_office_user();
         $data = Arsip::with('user.pejabat', 'disposisis.pejabat');
-        if (earsip_user()->is_kasubag()) {
+        if (e_office_user()->is_kasubag()) {
             if (strpos($request->header('referer'), 'selesai') === false) {
                 $data = $data->whereNull('paraf_kasubagumum_pada')->whereNull('diteruskan_ke_kadis')->latest('diteruskan_ke_kadis');
             } else {
@@ -398,21 +398,21 @@ class SuratMasukController extends Controller implements HasMiddleware
                 $data = $data->whereNotNull('paraf_kasubagumum_pada')->whereNotNull('diteruskan_ke_kadis')->latest('diteruskan_ke_kadis');
             }
         }
-        if (earsip_user()->is_kadis()) {
+        if (e_office_user()->is_kadis()) {
             if (strpos($request->header('referer'), 'selesai') === false) {
                 $data = $data->whereNotNull('diteruskan_ke_kadis')->doesntHave('disposisis');
             } else {
                 $data = $data->whereNotNull('diteruskan_ke_kadis')->whereNotNull('disposisi_pada')->latest('disposisi_pada');
             }
         }
-        if (earsip_user()->is_kabid()) {
+        if (e_office_user()->is_kabid()) {
             if (strpos($request->header('referer'), 'selesai') === false) {
                 $data = $data->whereHas('disposisis', function ($q) {
-                    $q->where('pejabat_id', earsip_user()->pejabat->id)->whereNull('teruskan_ke_whatsapp_pada');
+                    $q->where('pejabat_id', e_office_user()->pejabat->id)->whereNull('teruskan_ke_whatsapp_pada');
                 });
             } else {
                 $data = $data->whereHas('disposisis', function ($q) {
-                    $q->where('pejabat_id', earsip_user()->pejabat->id)->whereNotNull('dibaca_pada')->WhereNotNull('teruskan_ke_whatsapp_pada')->orWhereNotNull('diarsip_pada');
+                    $q->where('pejabat_id', e_office_user()->pejabat->id)->whereNotNull('dibaca_pada')->WhereNotNull('teruskan_ke_whatsapp_pada')->orWhereNotNull('diarsip_pada');
                 });
             }
         }
@@ -463,9 +463,9 @@ class SuratMasukController extends Controller implements HasMiddleware
                 if ($arsip && $arsip->disposisi_pdf && media_exists($arsip->disposisi_pdf)) {
                     $btn .= '<a href="' . $arsip->disposisi_pdf . '" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><i class="fa fa-download"></i></a>';
                 }
-                $btn .= '<a href="' . plugin_route('earsip.surat-masuk.show', $row->id) . '" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"><i class="fa fa-eye"></i></a>';
-                $btn .= $user->is_kasubag() || $user->is_operator() ? '<a href="' . plugin_route('earsip.surat-masuk.edit', $row->id) . '" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"><i class="fa fa-edit"></i></a>' : null;
-                $btn .= $user->is_kasubag() || $user->is_operator() ? '<a href="' . plugin_route('earsip.surat-masuk.destroy', $row->id) . '" onclick="return confirm(\'Anda yakin untuk menghapus ?\')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"><i class="fa fa-trash-o"></i></a>' : null;
+                $btn .= '<a href="' . plugin_route('e-office.surat-masuk.show', $row->id) . '" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"><i class="fa fa-eye"></i></a>';
+                $btn .= $user->is_kasubag() || $user->is_operator() ? '<a href="' . plugin_route('e-office.surat-masuk.edit', $row->id) . '" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"><i class="fa fa-edit"></i></a>' : null;
+                $btn .= $user->is_kasubag() || $user->is_operator() ? '<a href="' . plugin_route('e-office.surat-masuk.destroy', $row->id) . '" onclick="return confirm(\'Anda yakin untuk menghapus ?\')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"><i class="fa fa-trash-o"></i></a>' : null;
                 $btn .= '</div>';
                 return $btn;
             })
@@ -475,17 +475,17 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function destroy(Arsip $arsip)
     {
-        earsip_auth_check();
-        if (earsip_user()->is_operator() || earsip_user()->is_kasubag()) {
+        e_office_auth_check();
+        if (e_office_user()->is_operator() || e_office_user()->is_kasubag()) {
             $arsip->delete();
-            return redirect(plugin_route('earsip.surat-masuk.index'))->with('success', 'Surat berhasil dihapus');
+            return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Surat berhasil dihapus');
         }
         abort(403, 'Akses dibatasi');
     }
 
     public function riwayat(Request $request)
     {
-        earsip_auth_check();
+        e_office_auth_check();
         $data = Arsip::with('user.pejabat', 'disposisis.pejabat')->orderBy('nomor_agenda');
         return DataTables::of($data)
             ->addIndexColumn()

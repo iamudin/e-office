@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login &mdash; {{ config('earsip.title', 'e-Arsip') }}</title>
+    <title>Login &mdash; {{ config('e-office.title', 'e-Arsip') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -31,8 +31,8 @@
                 class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/30 mb-4">
                 <i class="fa fa-archive text-white text-4xl"></i>
             </div>
-            <h1 class="text-3xl font-bold text-white tracking-tight">{{ config('earsip.title', 'e-Arsip') }}</h1>
-            <p class="text-slate-400 mt-2">{{ config('earsip.description', 'Sistem Arsip Elektronik') }}</p>
+            <h1 class="text-3xl font-bold text-white tracking-tight">{{ config('e-office.title', 'e-Arsip') }}</h1>
+            <p class="text-slate-400 mt-2">{{ config('e-office.description', 'Sistem Arsip Elektronik') }}</p>
         </div>
 
         <!-- Login Card -->
@@ -79,7 +79,7 @@
             </form>
 
             <div class="mt-8 text-center text-xs text-slate-400">
-                &copy; {{ date('Y') }} {{ config('earsip.title', 'e-Arsip') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('e-office.title', 'e-Arsip') }}. All rights reserved.
             </div>
         </div>
     </div>

@@ -1,4 +1,4 @@
-@extends('earsip::layout.app', ['title' => 'Surat Masuk'])
+@extends('e-office::layout.app', ['title' => 'Surat Masuk'])
 
 @section('content')
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -7,8 +7,8 @@
             <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-envelope mr-2 text-indigo-500"></i> Surat Masuk</h3>
             <p class="text-sm text-slate-500 mt-1">Daftar semua surat masuk dan status disposisi.</p>
         </div>
-        @if (earsip_user()?->pejabat?->alias_jabatan == 'OPERATOR')
-            <a href="{{ plugin_route('earsip.surat-masuk.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+        @if (e_office_user()?->pejabat?->alias_jabatan == 'OPERATOR')
+            <a href="{{ plugin_route('e-office.surat-masuk.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                 <i class="fa fa-plus mr-2"></i> Tambah Surat
             </a>
         @endif
@@ -17,11 +17,11 @@
     <div class="p-6 border-b border-slate-100">
         <nav class="flex space-x-4" aria-label="Tabs">
             @php $isSelesai = request()->segment(2) === 'selesai'; @endphp
-            <a href="{{ plugin_route('earsip.surat-masuk.index') }}" 
+            <a href="{{ plugin_route('e-office.surat-masuk.index') }}" 
                class="px-4 py-2 text-sm font-medium rounded-lg {{ !$isSelesai ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100' }} transition-colors">
                <i class="fa fa-download mr-2"></i> Baru
             </a>
-            <a href="{{ plugin_route('earsip.surat-masuk.index.selesai') }}" 
+            <a href="{{ plugin_route('e-office.surat-masuk.index.selesai') }}" 
                class="px-4 py-2 text-sm font-medium rounded-lg {{ $isSelesai ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100' }} transition-colors">
                <i class="fa fa-mail-forward mr-2"></i> Sudah Diproses
             </a>
@@ -61,7 +61,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ plugin_route('earsip.surat-masuk.datatable') }}",
+                    url: "{{ plugin_route('e-office.surat-masuk.datatable') }}",
                     type: "POST",
                     data: function(d) {
                         d._token = "{{ csrf_token() }}";

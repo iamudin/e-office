@@ -1,4 +1,4 @@
-@extends('earsip::layout.app', ['title' => 'Briefing / Tugas'])
+@extends('e-office::layout.app', ['title' => 'Briefing / Tugas'])
 
 @section('content')
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -8,7 +8,7 @@
             <p class="text-sm text-gray-500">Kelola dan pantau tugas dari pimpinan.</p>
         </div>
         @if($isKadis)
-        <a href="{{ plugin_route('earsip.briefing.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20">
+        <a href="{{ plugin_route('e-office.briefing.create') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20">
             <i class="fa fa-plus"></i> Buat Briefing Baru
         </a>
         @endif
@@ -52,7 +52,7 @@
                                 </span>
                             </td>
                             <td class="p-4 text-right">
-                                <a href="{{ plugin_route('earsip.briefing.show', $briefing->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm">
+                                <a href="{{ plugin_route('e-office.briefing.show', $briefing->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm">
                                     <i class="fa fa-eye"></i>
                                 </a>
                             </td>

@@ -1,4 +1,4 @@
-@extends('earsip::layout.app', ['title' => (isset($data) ? 'Edit' : 'Tambah') . ' Surat Masuk'])
+@extends('e-office::layout.app', ['title' => (isset($data) ? 'Edit' : 'Tambah') . ' Surat Masuk'])
 
 @section('content')
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
@@ -7,12 +7,12 @@
             <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-envelope mr-2 text-indigo-500"></i> {{ isset($data) ? 'Edit' : 'Tambah' }} Surat Masuk</h3>
             <p class="text-sm text-slate-500 mt-1">Formulir untuk mendata surat masuk baru.</p>
         </div>
-        <a href="{{ plugin_route('earsip.surat-masuk.index') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+        <a href="{{ plugin_route('e-office.surat-masuk.index') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
             <i class="fa fa-arrow-left mr-2"></i> Kembali
         </a>
     </div>
 
-    <form method="POST" action="{{ isset($data) ? plugin_route('earsip.surat-masuk.update', $data->id) : plugin_route('earsip.surat-masuk.store') }}" enctype="multipart/form-data" class="p-6">
+    <form method="POST" action="{{ isset($data) ? plugin_route('e-office.surat-masuk.update', $data->id) : plugin_route('e-office.surat-masuk.store') }}" enctype="multipart/form-data" class="p-6">
         @csrf
         @if(isset($data)) @method('PUT') @endif
 

@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Plugins\Earsip;
+namespace App\Models\Plugins\EOffice;
 use Leazycms\Web\Models\User as BaseUser;
 use Illuminate\Database\Eloquent\SoftDeletes;
 

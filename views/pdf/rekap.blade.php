@@ -17,7 +17,7 @@
 <body>
 	<div class="header">
 		<h1>REKAPITULASI SURAT MASUK</h1>
-		<h2>{{ config('earsip.title', 'E-Arsip') }} - Periode: {{ $periode }}</h2>
+		<h2>{{ config('e-office.title', 'E-Arsip') }} - Periode: {{ $periode }}</h2>
 	</div>
 
 	<table>
