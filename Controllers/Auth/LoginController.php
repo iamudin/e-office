@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Plugins\Earsip\Auth;
+namespace App\Http\Controllers\Plugins\EOffice\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Plugins\Earsip\User;
+use App\Models\Plugins\EOffice\User;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use App\Http\Controllers\Plugins\Earsip\Middleware\RedirectMiddleware;
+use App\Http\Controllers\Plugins\EOffice\Middleware\RedirectMiddleware;
 
 class LoginController extends Controller implements HasMiddleware
 {
@@ -21,13 +21,13 @@ class LoginController extends Controller implements HasMiddleware
 
     public function showLogin()
     {
-        if (session()->has('earsip_user_id')) {
-            $user = earsip_user();
-            if ($user && in_array($user->level, ['earsip', 'admin'])) {
+        if (session()->has('e_office_user_id')) {
+            $user = e_office_user();
+            if ($user && in_array($user->level, ['e-office', 'admin'])) {
                 return redirect(plugin_route('dashboard'));
             }
         }
-        return view('earsip::auth.login');
+        return view('e-office::auth.login');
     }
 
     public function login(Request $request)
@@ -42,7 +42,7 @@ class LoginController extends Controller implements HasMiddleware
         $user = User::where($field, $request->username)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            if (!in_array($user->level, ['earsip', 'admin'])) {
+            if (!in_array($user->level, ['e-office', 'admin'])) {
                 return back()->with('error', 'Anda tidak memiliki akses ke sistem ini');
             }
 
@@ -55,7 +55,7 @@ class LoginController extends Controller implements HasMiddleware
                 'last_login_ip' => $request->ip(),
             ]);
 
-            session(['earsip_user_id' => $user->id]);
+            session(['e_office_user_id' => $user->id]);
             $request->session()->regenerate();
             return redirect(plugin_route('dashboard'));
         }
@@ -65,7 +65,7 @@ class LoginController extends Controller implements HasMiddleware
 
     public function logout(Request $request)
     {
-        session()->forget('earsip_user_id');
+        session()->forget('e_office_user_id');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect(plugin_route('login'));

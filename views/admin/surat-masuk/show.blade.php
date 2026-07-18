@@ -1,14 +1,14 @@
-@extends('earsip::layout.app', ['title' => 'Detail Surat Masuk'])
+@extends('e-office::layout.app', ['title' => 'Detail Surat Masuk'])
 
 @section('content')
 <div class="flex justify-between items-center mb-6">
     <h3 class="text-2xl font-semibold text-slate-800"><i class="fa fa-envelope mr-2 text-indigo-500"></i> Detail Surat Masuk</h3>
-    <a href="{{ plugin_route('earsip.surat-masuk.index') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+    <a href="{{ plugin_route('e-office.surat-masuk.index') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-colors">
         <i class="fa fa-arrow-left mr-2"></i> Kembali
     </a>
 </div>
 
-<form action="{{ plugin_route('earsip.surat-masuk.disposisi', $data->id) }}" method="POST">
+<form action="{{ plugin_route('e-office.surat-masuk.disposisi', $data->id) }}" method="POST">
     @csrf
     @method('PUT')
     
@@ -17,7 +17,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                     <h4 class="text-base font-semibold text-slate-800">Informasi Surat</h4>
-                    @if(earsip_user()->is_kasubag() || earsip_user()->is_operator())
+                    @if(e_office_user()->is_kasubag() || e_office_user()->is_operator())
                         <button type="submit" name="cetak_disposisi" value="true" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
                             <i class="fa fa-print mr-1.5"></i> Cetak Disposisi
                         </button>
@@ -65,14 +65,14 @@
         <!-- Kolom Kiri: PDF Viewer -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Alert Untuk Kabid -->
-            @if(earsip_user()->is_kabid() && $data->disposisis->count())
+            @if(e_office_user()->is_kabid() && $data->disposisis->count())
                 <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-xl p-4 shadow-sm">
                     <div class="flex items-start">
                         <div class="flex-shrink-0"><i class="fa fa-info-circle text-amber-500 text-lg"></i></div>
                         <div class="ml-3">
                             <h3 class="text-sm font-bold text-amber-800">Instruksi Disposisi</h3>
                             <div class="mt-2 text-sm text-amber-700 space-y-2">
-                                @php $others = $data->disposisis->where('pejabat_id', '<>', earsip_user()->pejabat->id); @endphp
+                                @php $others = $data->disposisis->where('pejabat_id', '<>', e_office_user()->pejabat->id); @endphp
                                 @if($data->disposisis->count() == 1)
                                     <p class="font-medium">Surat ini HANYA diteruskan kepada Anda.</p>
                                 @elseif($others->count())
@@ -129,7 +129,7 @@
         <!-- Kolom Kanan: Timeline -->
         <div class="space-y-6">
             <!-- Timeline Tindak Lanjut -->
-            @if(earsip_user()->is_kasubag() || earsip_user()->is_operator() || earsip_user()->is_kadis())
+            @if(e_office_user()->is_kasubag() || e_office_user()->is_operator() || e_office_user()->is_kadis())
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden p-6">
                 <h4 class="text-lg font-semibold text-slate-800 mb-6">Tindak Lanjut & Disposisi</h4>
                 
@@ -149,14 +149,14 @@
                                                 <div class="flex justify-between items-start mb-2">
                                                     <span class="font-medium text-slate-900 text-sm">
                                                         {{ $row->pejabat->jabatan }}
-                                                        @if(earsip_user()->pejabat->id == $row->pejabat->id) 
+                                                        @if(e_office_user()->pejabat->id == $row->pejabat->id) 
                                                             <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">ANDA</span>
                                                         @endif
                                                     </span>
                                                     <span class="text-xs text-slate-400">{{ $row->created_at->diffForHumans() }}</span>
                                                 </div>
                                                 
-                                                @if(earsip_user()->pejabat->id == $row->pejabat->id)
+                                                @if(e_office_user()->pejabat->id == $row->pejabat->id)
                                                     @if($row->belum_dibalas())
                                                         <div class="mt-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded inline-block mb-2">Belum ada balasan</div>
                                                         <div x-data="{ open: false }">
@@ -200,7 +200,7 @@
                                     </div>
                                     <p class="text-xs text-slate-400 mt-4 text-right">{{ $data->diteruskan_ke_kadis->diffForHumans() }}</p>
                                     
-                                    @if(earsip_user()->is_kadis())
+                                    @if(e_office_user()->is_kadis())
                                         <div class="mt-4 pt-4 border-t border-slate-200">
                                             <button type="submit" name="perbarui_dipsosisi" value="true" onclick="return confirm('Anda yakin untuk disposisi ulang?')" class="inline-flex items-center px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-lg hover:bg-amber-200">
                                                 <i class="fa fa-edit mr-1.5"></i> Disposisi Ulang
@@ -208,7 +208,7 @@
                                         </div>
                                     @endif
                                 @else
-                                    @if(earsip_user()->is_kadis())
+                                    @if(e_office_user()->is_kadis())
                                         <h5 class="font-semibold text-slate-800 mb-4">Teruskan surat ini kepada:</h5>
                                         <div class="space-y-3 mb-5">
                                             @foreach($pejabat as $row)
@@ -259,7 +259,7 @@
                                 <p class="text-sm text-slate-600 mb-2">Kasubag telah memeriksa dan memberikan paraf persetujuan.</p>
                                 <p class="text-xs text-slate-400">{{ $data->paraf_kasubagumum_pada->diffForHumans() }}</p>
                             @else
-                                @if(earsip_user()->is_kasubag())
+                                @if(e_office_user()->is_kasubag())
                                     <div class="mt-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                         <label class="flex items-center mb-4 cursor-pointer">
                                             <input type="checkbox" name="paraf_kasubag" value="1" id="parafSurat" onchange="document.getElementById('btnTeruskan').style.display = this.checked ? 'block' : 'none';" class="w-5 h-5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500">
@@ -294,8 +294,8 @@
             @endif
 
             <!-- Teruskan via WA (Kabid Only) -->
-            @if(earsip_user()->is_kabid())
-                @php $teruskan = $data->disposisis->where('pejabat_id', earsip_user()->pejabat->id)->first(); @endphp
+            @if(e_office_user()->is_kabid())
+                @php $teruskan = $data->disposisis->where('pejabat_id', e_office_user()->pejabat->id)->first(); @endphp
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 bg-emerald-50/50 flex items-center">
                         <h4 class="font-semibold text-emerald-800"><i class="fa fa-whatsapp mr-2 text-emerald-500 text-lg"></i> Teruskan ke WhatsApp</h4>

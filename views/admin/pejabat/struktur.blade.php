@@ -59,7 +59,7 @@
             <div class="card-body">
                 <p class="text-muted small mb-4">Anda juga bisa mengatur atasan secara manual melalui form ini atau dengan cara **Drag and Drop** pada daftar di samping.</p>
 
-                <form action="{{ route('earsip.struktur-briefing.update') }}" method="POST">
+                <form action="{{ route('e-office.struktur-briefing.update') }}" method="POST">
                     @csrf
                     <div class="form-group mb-3">
                         <label class="font-weight-bold small">Pilih Pejabat (Bawahan) <span class="text-danger">*</span></label>
@@ -103,13 +103,13 @@
                     <div class="dd" id="nestable">
                         <ol class="dd-list">
                             @foreach($pejabats as $top)
-                                @include('earsip::admin.pejabat._hirarki', ['pejabat' => $top, 'level' => 0])
+                                @include('e-office::admin.pejabat._hirarki', ['pejabat' => $top, 'level' => 0])
                             @endforeach
                             
                             {{-- Tampilkan juga pejabat yang mungkin tidak punya atasan tapi tidak ter-render jika staff-nya bermasalah (fallback) --}}
                             @foreach($semuaPejabat as $p)
                                 @if(is_null($p->atasan_id) && !$pejabats->contains('id', $p->id))
-                                    @include('earsip::admin.pejabat._hirarki', ['pejabat' => $p, 'level' => 0])
+                                    @include('e-office::admin.pejabat._hirarki', ['pejabat' => $p, 'level' => 0])
                                 @endif
                             @endforeach
                         </ol>
@@ -203,7 +203,7 @@ $(document).ready(function() {
         $('#save-status').removeClass('d-none badge-success badge-danger').addClass('badge-warning').text('Menyimpan...').show();
         
         $.ajax({
-            url: '{{ route("earsip.struktur-briefing.update-ajax") }}',
+            url: '{{ route("e-office.struktur-briefing.update-ajax") }}',
             type: 'POST',
             data: {
                 _token: '{{ csrf_token() }}',
@@ -254,7 +254,7 @@ $(document).ready(function() {
         var originalText = btn.html();
         btn.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
 
-        var url = '{{ route("earsip.pejabat.tupoksi.store", ["pejabatId" => ":id"]) }}'.replace(':id', pejabatId);
+        var url = '{{ route("e-office.pejabat.tupoksi.store", ["pejabatId" => ":id"]) }}'.replace(':id', pejabatId);
 
         $.ajax({
             url: url,
@@ -283,7 +283,7 @@ function editPejabat(id) {
     $('#editPejabatModalBody').html('<div class="p-5 text-center text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat form...</div>');
     $('#editPejabatModal').modal('show');
     
-    var url = '{{ route("earsip.pejabat.edit", ["pejabat" => ":id"]) }}'.replace(':id', id);
+    var url = '{{ route("e-office.pejabat.edit", ["pejabat" => ":id"]) }}'.replace(':id', id);
     
     $.ajax({
         url: url,
@@ -307,7 +307,7 @@ function manageTupoksi(pejabatId, nama) {
 function loadTupoksi(pejabatId) {
     $('#tupoksiListBody').html('<tr><td colspan="3" class="text-center text-muted"><i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>');
     
-    var url = '{{ route("earsip.pejabat.tupoksi.get", ["pejabatId" => ":id"]) }}'.replace(':id', pejabatId);
+    var url = '{{ route("e-office.pejabat.tupoksi.get", ["pejabatId" => ":id"]) }}'.replace(':id', pejabatId);
 
     $.ajax({
         url: url,
@@ -336,7 +336,7 @@ function loadTupoksi(pejabatId) {
 
 function deleteTupoksi(id, pejabatId) {
     if(confirm('Yakin ingin menghapus tugas & fungsi ini?')) {
-        var url = '{{ route("earsip.pejabat.tupoksi.delete", ["id" => ":id"]) }}'.replace(':id', id);
+        var url = '{{ route("e-office.pejabat.tupoksi.delete", ["id" => ":id"]) }}'.replace(':id', id);
         
         $.ajax({
             url: url,

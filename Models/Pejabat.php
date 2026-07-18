@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Plugins\Earsip;
+namespace App\Models\Plugins\EOffice;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

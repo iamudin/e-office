@@ -7,7 +7,7 @@
                 <h5 class="mb-0 font-weight-bold"><i class="fa fa-users text-primary mr-2"></i> Daftar User & Pejabat</h5>
                 <small class="text-muted">Kelola data pejabat struktural dan akses sistem arsip.</small>
             </div>
-            <a href="{{ route('earsip.pejabat.create') }}" class="btn btn-primary">
+            <a href="{{ route('e-office.pejabat.create') }}" class="btn btn-primary">
                 <i class="fa fa-plus mr-1"></i> Tambah Pejabat
             </a>
         </div>
@@ -46,7 +46,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('earsip.pejabat.datatable') }}",
+                    url: "{{ route('e-office.pejabat.datatable') }}",
                     type: "POST",
                     data: function (d) {
                         d._token = "{{ csrf_token() }}";

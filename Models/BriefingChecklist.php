@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Plugins\Earsip;
+namespace App\Models\Plugins\EOffice;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -8,7 +8,7 @@ class BriefingChecklist extends Model
 {
     use HasUuids;
 
-    protected $table = 'earsip_briefing_checklists';
+    protected $table = 'e_office_briefing_checklists';
 
     protected $fillable = [
         'briefing_id',

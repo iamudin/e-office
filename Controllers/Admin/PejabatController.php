@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Plugins\Earsip\Admin;
+namespace App\Http\Controllers\Plugins\EOffice\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Yajra\DataTables\Facades\DataTables;
-use App\Models\Plugins\Earsip\Pejabat;
-use App\Models\Plugins\Earsip\User;
+use App\Models\Plugins\EOffice\Pejabat;
+use App\Models\Plugins\EOffice\User;
 
 class PejabatController extends Controller
 {
@@ -43,10 +43,10 @@ class PejabatController extends Controller
 
         if (request()->ajax()) {
             $viewData['is_modal'] = true;
-            return view('earsip::admin.pejabat._form', $viewData);
+            return view('e-office::admin.pejabat._form', $viewData);
         }
 
-        return view('earsip::admin.pejabat.form', $viewData);
+        return view('e-office::admin.pejabat.form', $viewData);
     }
     public function store(Request $request)
     {
@@ -65,16 +65,16 @@ class PejabatController extends Controller
             'name'=> $request->nama,
             'email'=> $request->email,
             'status'=> 'active',
-            'level'=> 'earsip',
+            'level'=> 'e-office',
             'slug'=> str($request->nama)->slug(),
         ]);
         $create = $user->pejabat()->create(array_merge($request->all(),['penerima_disposisi'=>$request->penerima_disposisi ?? 0]));
-        return redirect(route('earsip.pejabat.edit',$create->id))->with('success','Berhasil ditambah');;
+        return redirect(route('e-office.pejabat.edit',$create->id))->with('success','Berhasil ditambah');;
     }
     public function create()
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
-        return view('earsip::admin.pejabat.form', 
+        return view('e-office::admin.pejabat.form', 
         [
             'data' => null,
             'penerima_disposisi' => Pejabat::wherePenerimaDisposisi(1)->get(),
@@ -85,7 +85,7 @@ class PejabatController extends Controller
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
         $data = [];
-        return view('earsip::admin.pejabat.index', $data);
+        return view('e-office::admin.pejabat.index', $data);
     }
     public function datatable(Request $request)
     {
@@ -96,7 +96,7 @@ class PejabatController extends Controller
             ->filter(function ($instance) use ($request) {})
             ->addColumn('action', function ($row) {
                 $btn = '<div class="flex items-center gap-1">';
-                $btn .= '<a href="'.route('earsip.pejabat.edit',$row->id).'" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"><i class="fa fa-edit"></i></a>';
+                $btn .= '<a href="'.route('e-office.pejabat.edit',$row->id).'" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"><i class="fa fa-edit"></i></a>';
                 $btn .= '</div>';
                 return $btn;
             })
@@ -124,7 +124,7 @@ class PejabatController extends Controller
         // Ambil semua pejabat untuk pilihan select
         $semuaPejabat = Pejabat::orderBy('nama')->get();
 
-        return view('earsip::admin.pejabat.struktur', compact('pejabats', 'semuaPejabat'));
+        return view('e-office::admin.pejabat.struktur', compact('pejabats', 'semuaPejabat'));
     }
 
     public function updateStruktur(Request $request)
@@ -199,7 +199,7 @@ class PejabatController extends Controller
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
         
-        $tupoksi = \App\Models\Plugins\Earsip\PejabatTupoksi::findOrFail($id);
+        $tupoksi = \App\Models\Plugins\EOffice\PejabatTupoksi::findOrFail($id);
         $tupoksi->delete();
 
         return response()->json(['success' => true]);

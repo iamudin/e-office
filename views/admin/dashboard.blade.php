@@ -1,13 +1,13 @@
-@extends('earsip::layout.app', ['title' => 'Dashboard'])
+@extends('e-office::layout.app', ['title' => 'Dashboard'])
 
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
     @php
         $stats = [
-            ['title' => 'Total Surat Masuk', 'value' => \App\Models\Plugins\Earsip\Arsip::count(), 'icon' => 'fa-envelope', 'color' => 'bg-blue-500'],
-            ['title' => 'Surat Belum Diproses', 'value' => \App\Models\Plugins\Earsip\Arsip::whereNull('diteruskan_ke_kadis')->count(), 'icon' => 'fa-spinner', 'color' => 'bg-amber-500'],
-            ['title' => 'Surat Selesai Disposisi', 'value' => \App\Models\Plugins\Earsip\Arsip::whereNotNull('disposisi_pada')->count(), 'icon' => 'fa-check-circle', 'color' => 'bg-emerald-500'],
-            ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\Earsip\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'],
+            ['title' => 'Total Surat Masuk', 'value' => \App\Models\Plugins\EOffice\Arsip::count(), 'icon' => 'fa-envelope', 'color' => 'bg-blue-500'],
+            ['title' => 'Surat Belum Diproses', 'value' => \App\Models\Plugins\EOffice\Arsip::whereNull('diteruskan_ke_kadis')->count(), 'icon' => 'fa-spinner', 'color' => 'bg-amber-500'],
+            ['title' => 'Surat Selesai Disposisi', 'value' => \App\Models\Plugins\EOffice\Arsip::whereNotNull('disposisi_pada')->count(), 'icon' => 'fa-check-circle', 'color' => 'bg-emerald-500'],
+            ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\EOffice\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'],
         ];
     @endphp
     @foreach($stats as $stat)
@@ -23,7 +23,7 @@
     @endforeach
 </div>
 
-@if(earsip_user()->is_operator() || earsip_user()->is_kasubag())
+@if(e_office_user()->is_operator() || e_office_user()->is_kasubag())
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
         <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-print mr-2 text-indigo-500"></i> Cetak Rekapitulasi</h3>
@@ -86,7 +86,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ plugin_route('earsip.surat-masuk.riwayat') }}",
+                    url: "{{ plugin_route('e-office.surat-masuk.riwayat') }}",
                     type: "POST",
                     data: function(d) {
                         d._token = "{{ csrf_token() }}";

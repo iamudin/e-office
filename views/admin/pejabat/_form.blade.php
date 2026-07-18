@@ -1,4 +1,4 @@
-<form method="POST" action="{{ isset($data) ? route('earsip.pejabat.update', $data->id) : route('earsip.pejabat.store') }}" class="mb-0">
+<form method="POST" action="{{ isset($data) ? route('e-office.pejabat.update', $data->id) : route('e-office.pejabat.store') }}" class="mb-0">
     @csrf
     @if(isset($data)) @method('PUT') @endif
     

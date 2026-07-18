@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Plugins\Earsip;
+namespace App\Models\Plugins\EOffice;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -8,7 +8,7 @@ class PejabatTupoksi extends Model
 {
     use HasUuids;
 
-    protected $table = 'earsip_pejabat_tupoksis';
+    protected $table = 'e_office_pejabat_tupoksis';
 
     protected $fillable = [
         'pejabat_id',

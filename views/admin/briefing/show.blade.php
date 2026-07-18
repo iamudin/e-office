@@ -1,4 +1,4 @@
-@extends('earsip::layout.app', ['title' => 'Detail Briefing / Tugas'])
+@extends('e-office::layout.app', ['title' => 'Detail Briefing / Tugas'])
 
 @section('content')
 <div class="space-y-6">
@@ -25,7 +25,7 @@
             
             @if($isKadis && $briefing->status !== 'completed')
             <div>
-                <form action="{{ plugin_route('earsip.briefing.close', $briefing->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menutup/menyelesaikan tugas ini?')">
+                <form action="{{ plugin_route('e-office.briefing.close', $briefing->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menutup/menyelesaikan tugas ini?')">
                     @csrf
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20">
                         <i class="fa fa-check-circle mr-1"></i> Tandai Selesai
@@ -96,7 +96,7 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Ceklis Kegiatan</h3>
         
         @if(!$isKadis && $myDisposisi && $briefing->status !== 'completed')
-        <form action="{{ plugin_route('earsip.briefing.balas', $briefing->id) }}" method="POST" id="checklistForm">
+        <form action="{{ plugin_route('e-office.briefing.balas', $briefing->id) }}" method="POST" id="checklistForm">
             @csrf
             <div class="space-y-3">
                 @foreach($briefing->checklists->filter(fn($c) => is_null($c->penerima_id) || $c->penerima_id == $pejabat?->id) as $chk)
@@ -290,7 +290,7 @@
                                     
                                     @if(!$isKadis && $disp->pengirim_id == $pejabat?->id && !$disp->is_validated_by_atasan)
                                     <div class="mt-4 pt-3 border-t border-indigo-200/60">
-                                        <form action="{{ plugin_route('earsip.briefing.validasi', $disp->id) }}" method="POST" onsubmit="return confirm('Validasi dan teruskan respon ini ke pimpinan/atasan?')">
+                                        <form action="{{ plugin_route('e-office.briefing.validasi', $disp->id) }}" method="POST" onsubmit="return confirm('Validasi dan teruskan respon ini ke pimpinan/atasan?')">
                                             @csrf
                                             <button type="submit" class="text-xs font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition-colors">
                                                 <i class="fa fa-check-circle mr-1"></i> Validasi & Teruskan ke Atasan
@@ -322,7 +322,7 @@
                             <div x-data="{ open: false }">
                                 <button @click="open = !open" class="text-xs font-medium text-amber-600 hover:text-amber-700"><i class="fa fa-reply mr-1"></i> Beri Feedback</button>
                                 <div x-show="open" x-cloak class="mt-2">
-                                    <form action="{{ plugin_route('earsip.briefing.feedback', $disp->id) }}" method="POST" class="flex gap-2">
+                                    <form action="{{ plugin_route('e-office.briefing.feedback', $disp->id) }}" method="POST" class="flex gap-2">
                                         @csrf
                                         <input type="text" name="feedback_kadis" required placeholder="Tulis feedback..." class="flex-1 text-sm rounded-lg border-gray-200 py-1.5 px-3">
                                         <button type="submit" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-lg hover:bg-amber-700">Kirim</button>
@@ -344,7 +344,7 @@
             {{-- Form Balas --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Balas Tugas Ini</h3>
-                <form action="{{ plugin_route('earsip.briefing.balas', $briefing->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ plugin_route('e-office.briefing.balas', $briefing->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pesan Balasan</label>
@@ -391,7 +391,7 @@
                                 }
                             });
                         }
-                    }" action="{{ plugin_route('earsip.briefing.teruskan', $briefing->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                    }" action="{{ plugin_route('e-office.briefing.teruskan', $briefing->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                         @csrf
                         
                         <div>

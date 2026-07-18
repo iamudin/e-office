@@ -36,7 +36,7 @@
     @if($pejabat->staff && $pejabat->staff->count() > 0)
         <ol class="dd-list ">
             @foreach($pejabat->staff as $bawahan)
-                @include('earsip::admin.pejabat._hirarki', ['pejabat' => $bawahan, 'level' => $level + 1])
+                @include('e-office::admin.pejabat._hirarki', ['pejabat' => $bawahan, 'level' => $level + 1])
             @endforeach
         </ol>
     @endif

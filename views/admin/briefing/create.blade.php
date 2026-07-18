@@ -1,4 +1,4 @@
-@extends('earsip::layout.app', ['title' => 'Buat Briefing / Tugas Baru'])
+@extends('e-office::layout.app', ['title' => 'Buat Briefing / Tugas Baru'])
 
 @section('content')
 <div class="max-w-6xl mx-auto">
@@ -8,7 +8,7 @@
                 <h3 class="text-lg font-bold text-indigo-900">Buat Briefing Baru</h3>
                 <p class="text-sm text-indigo-600 mt-1">Delegasikan tugas dengan instruksi massal maupun instruksi khusus per bawahan.</p>
             </div>
-            <a href="{{ plugin_route('earsip.briefing.index') }}" class="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+            <a href="{{ plugin_route('e-office.briefing.index') }}" class="px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                 <i class="fa fa-arrow-left mr-2"></i> Kembali
             </a>
         </div>
@@ -22,7 +22,7 @@
                     this.penerima.push(id);
                 }
             }
-        }" action="{{ plugin_route('earsip.briefing.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-8">
+        }" action="{{ plugin_route('e-office.briefing.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-8">
             @csrf
             
             <!-- BAGIAN INSTRUKSI MASSAL -->

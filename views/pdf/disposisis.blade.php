@@ -81,7 +81,7 @@
 	<table class="header no-border">
 		<tr>
 			<td width="15%" class="no-border text-center" style="text-align: center;">
-				<img src="{{ config('earsip.logo') }}" alt="Logo" style="width: 70px;">
+				<img src="{{ config('e-office.logo') }}" alt="Logo" style="width: 70px;">
 			</td>
 			<td width="85%" class="no-border header-title">
 				<h1 style="font-size: 22px;">PEMERINTAH KABUPATEN BENGKALIS</h1>

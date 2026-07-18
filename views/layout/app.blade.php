@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'Dashboard' }} — {{ config('earsip.title', 'e-Arsip') }}</title>
+    <title>{{ $title ?? 'Dashboard' }} — {{ config('e-office.title', 'e-Arsip') }}</title>
 
     {{-- Tailwind CSS CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
@@ -155,7 +155,7 @@
             </div>
             <div>
                 <h1 class="text-white font-bold text-base tracking-tight leading-tight">
-                    {{ config('earsip.title', 'E-Office') }}</h1>
+                    {{ config('e-office.title', 'E-Office') }}</h1>
                 <p class="text-slate-500 text-[10px] font-medium uppercase tracking-wider">E-Office System</p>
             </div>
         </div>
@@ -166,12 +166,12 @@
                 $currentPath = request()->path();
                 $sidebarMenus = [
                     ['name' => 'Dashboard', 'route' => 'dashboard', 'icon' => 'fa-dashboard', 'match' => 'dashboard'],
-                    ['name' => 'Arsip Surat', 'route' => 'earsip.surat-masuk.index', 'icon' => 'fa-envelope', 'match' => 'surat-masuk'],
-                    ['name' => 'Briefing', 'route' => 'earsip.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'],
+                    ['name' => 'Arsip Surat', 'route' => 'e-office.surat-masuk.index', 'icon' => 'fa-envelope', 'match' => 'surat-masuk'],
+                    ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'],
                 ];
-                if (earsip_user() && earsip_user()->isAdmin()) {
-                    $sidebarMenus[] = ['name' => 'Akses User', 'route' => 'earsip.pejabat.index', 'icon' => 'fa-users', 'match' => 'pejabat'];
-                    $sidebarMenus[] = ['name' => 'Pengaturan', 'route' => 'earsip.pengaturan.index', 'icon' => 'fa-cog', 'match' => 'pengaturan'];
+                if (e_office_user() && e_office_user()->isAdmin()) {
+                    $sidebarMenus[] = ['name' => 'Akses User', 'route' => 'e-office.pejabat.index', 'icon' => 'fa-users', 'match' => 'pejabat'];
+                    $sidebarMenus[] = ['name' => 'Pengaturan', 'route' => 'e-office.pengaturan.index', 'icon' => 'fa-cog', 'match' => 'pengaturan'];
                 }
             @endphp
             @foreach($sidebarMenus as $menu)
@@ -195,12 +195,12 @@
             <div class="flex items-center gap-3 px-2">
                 <div
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold shadow">
-                    {{ strtoupper(substr(earsip_user()->name ?? 'U', 0, 1)) }}
+                    {{ strtoupper(substr(e_office_user()->name ?? 'U', 0, 1)) }}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate">{{ earsip_user()->name ?? '-' }}</p>
+                    <p class="text-sm font-medium text-white truncate">{{ e_office_user()->name ?? '-' }}</p>
                     <p class="text-[11px] text-slate-500 truncate">
-                        {{ earsip_user()?->pejabat?->alias_jabatan ?? earsip_user()->level }}</p>
+                        {{ e_office_user()?->pejabat?->alias_jabatan ?? e_office_user()->level }}</p>
                 </div>
                 <form method="POST" action="{{ plugin_route('logout') }}">
                     @csrf

@@ -1,15 +1,15 @@
 <?php
-namespace App\Http\Controllers\Plugins\Earsip\Admin;
+namespace App\Http\Controllers\Plugins\EOffice\Admin;
 use App\Http\Controllers\Controller;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\View;
-use App\Models\Plugins\Earsip\Arsip;
+use App\Models\Plugins\EOffice\Arsip;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use App\Http\Controllers\Plugins\Earsip\Middleware\RedirectMiddleware;
+use App\Http\Controllers\Plugins\EOffice\Middleware\RedirectMiddleware;
 
 class DashboardController extends Controller implements HasMiddleware
 {
@@ -24,7 +24,7 @@ class DashboardController extends Controller implements HasMiddleware
     function pengaturan(Request $request){
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
 
-        $customDomain = get_option('earsip-domain');
+        $customDomain = get_option('e-office-domain');
 
         if($request->isMethod('PUT')){
             $data = $request->validate([
@@ -49,11 +49,11 @@ class DashboardController extends Controller implements HasMiddleware
             
             if ($domain) {
                 \Leazycms\Web\Models\Option::updateOrCreate(
-                    ['name' => 'earsip-domain', 'tenant_id' => tenant() ? tenant()->id : null],
+                    ['name' => 'e-office-domain', 'tenant_id' => tenant() ? tenant()->id : null],
                     ['value' => $domain, 'autoload' => 1]
                 );
             } else {
-                \Leazycms\Web\Models\Option::where('name', 'earsip-domain')
+                \Leazycms\Web\Models\Option::where('name', 'e-office-domain')
                     ->where('tenant_id', tenant() ? tenant()->id : null)
                     ->delete();
             }
@@ -63,7 +63,7 @@ class DashboardController extends Controller implements HasMiddleware
             
             return back()->with('success','Pengaturan berhasil disimpan');
         }
-        return view('earsip::admin.appconfig', compact('customDomain'));
+        return view('e-office::admin.appconfig', compact('customDomain'));
     }
     function judulPeriode($tanggalMulai, $tanggalAkhir)
     {
@@ -94,9 +94,9 @@ class DashboardController extends Controller implements HasMiddleware
         return $mulai->translatedFormat('j F Y') . ' s/d ' . $akhir->translatedFormat('j F Y');
     }
 public function index(){
-    earsip_auth_check();
+    e_office_auth_check();
     $data = [];
-    if(earsip_user()->is_operator() || earsip_user()->is_kasubag()){
+    if(e_office_user()->is_operator() || e_office_user()->is_kasubag()){
         $data['periode'] = $this->judulPeriode(
             request('tanggal_mulai',date('Y-m-d')),
             request('tanggal_akhir',date('Y-m-d'))
@@ -105,7 +105,7 @@ public function index(){
         $query = Arsip::with('user.pejabat', 'disposisis.pejabat')
         ->whereBetween('tanggal_terima', [request('tanggal_mulai',date('Y-m-d')),request('tanggal_akhir',date('Y-m-d'))])
         ->orderBy('nomor_agenda')->get();
-        $html = View::make('earsip::pdf.rekap', [
+        $html = View::make('e-office::pdf.rekap', [
                 'rekap' => $query,
                 'periode' => $data['periode'],
         ])->render();
@@ -116,7 +116,7 @@ public function index(){
 }
   
 
-    return view('earsip::admin.dashboard',$data);
+    return view('e-office::admin.dashboard',$data);
 }
 
 }
