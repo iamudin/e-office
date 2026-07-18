@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('earsip_pejabat_tupoksis', function (Blueprint $table) {
+        Schema::create('e_office_pejabat_tupoksis', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('pejabat_id');
             $table->text('tugas_fungsi');
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('earsip_pejabat_tupoksis');
+        Schema::dropIfExists('e_office_pejabat_tupoksis');
     }
 };

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('earsip_briefing_disposisis', function (Blueprint $table) {
+        Schema::table('e_office_briefing_disposisis', function (Blueprint $table) {
             $table->boolean('is_validated_by_atasan')->default(false)->after('dibalas_pada');
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('earsip_briefing_disposisis', function (Blueprint $table) {
+        Schema::table('e_office_briefing_disposisis', function (Blueprint $table) {
             $table->dropColumn('is_validated_by_atasan');
         });
     }
