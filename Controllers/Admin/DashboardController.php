@@ -94,6 +94,7 @@ class DashboardController extends Controller implements HasMiddleware
         return $mulai->translatedFormat('j F Y') . ' s/d ' . $akhir->translatedFormat('j F Y');
     }
 public function index(){
+    plugin_page_name('Dashboard - E-Office');
     e_office_auth_check();
     $data = [];
     if(e_office_user()->is_operator() || e_office_user()->is_kasubag()){

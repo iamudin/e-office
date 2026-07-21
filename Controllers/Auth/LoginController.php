@@ -23,7 +23,7 @@ class LoginController extends Controller implements HasMiddleware
     {
         if (session()->has('e_office_user_id')) {
             $user = e_office_user();
-            if ($user && in_array($user->level, ['e-office', 'admin'])) {
+            if ($user && in_array($user->level, ['e-office'])) {
                 return redirect(plugin_route('dashboard'));
             }
         }
@@ -42,7 +42,7 @@ class LoginController extends Controller implements HasMiddleware
         $user = User::where($field, $request->username)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-            if (!in_array($user->level, ['e-office', 'admin'])) {
+            if (!in_array($user->level, ['e-office'])) {
                 return back()->with('error', 'Anda tidak memiliki akses ke sistem ini');
             }
 
@@ -57,7 +57,8 @@ class LoginController extends Controller implements HasMiddleware
 
             session(['e_office_user_id' => $user->id]);
             $request->session()->regenerate();
-            return redirect(plugin_route('dashboard'));
+            return redirect()->intended(plugin_route('dashboard'));
+
         }
 
         return back()->with('error', 'Username atau password salah')->withInput($request->only('username'));

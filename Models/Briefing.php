@@ -5,10 +5,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Leazycms\FLC\Traits\Fileable;
+use Leazycms\Web\Models\Trait\Notificationable;
 
 class Briefing extends Model
 {
-    use HasUuids, SoftDeletes, Fileable;
+    use HasUuids, SoftDeletes, Fileable, Notificationable;
 
     protected $table = 'e_office_briefings';
 

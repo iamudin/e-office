@@ -166,9 +166,12 @@
                 $currentPath = request()->path();
                 $sidebarMenus = [
                     ['name' => 'Dashboard', 'route' => 'dashboard', 'icon' => 'fa-dashboard', 'match' => 'dashboard'],
-                    ['name' => 'Arsip Surat', 'route' => 'e-office.surat-masuk.index', 'icon' => 'fa-envelope', 'match' => 'surat-masuk'],
-                    ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'],
                 ];
+                if (e_office_user() && e_office_user()->canViewSuratMasuk()) {
+                    $sidebarMenus[] = ['name' => 'Arsip Surat', 'route' => 'e-office.surat-masuk.index', 'icon' => 'fa-envelope', 'match' => 'surat-masuk'];
+                }
+                $sidebarMenus[] = ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'];
+
                 if (e_office_user() && e_office_user()->isAdmin()) {
                     $sidebarMenus[] = ['name' => 'Akses User', 'route' => 'e-office.pejabat.index', 'icon' => 'fa-users', 'match' => 'pejabat'];
                     $sidebarMenus[] = ['name' => 'Pengaturan', 'route' => 'e-office.pengaturan.index', 'icon' => 'fa-cog', 'match' => 'pengaturan'];
@@ -239,8 +242,41 @@
             <div class="flex-1"></div>
 
             {{-- Right actions --}}
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4">
                 <span class="hidden sm:inline text-xs text-gray-400">{{ now()->translatedFormat('l, d F Y') }}</span>
+                @php
+                    $unreadNotifs = e_office_user() ? \Leazycms\Web\Models\Notification::where('user_id', e_office_user()->id)->where('is_read', false)->count() : 0;
+                @endphp
+                <div class="relative group">
+                    <button class="relative text-gray-400 hover:text-indigo-600 transition-colors" title="Notifikasi">
+                        <i class="fa fa-bell text-lg"></i>
+                        @if($unreadNotifs > 0)
+                            <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                                {{ $unreadNotifs > 99 ? '99+' : $unreadNotifs }}
+                            </span>
+                        @endif
+                    </button>
+                    <div class="absolute right-0 pt-2 w-80 hidden group-hover:block z-50">
+                        <div class="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+                            <div class="p-3 border-b border-gray-100">
+                                <h3 class="text-sm font-semibold text-gray-800">Notifikasi ({{ $unreadNotifs }})</h3>
+                            </div>
+                            <div class="max-h-80 overflow-y-auto">
+                                @if($unreadNotifs > 0)
+                                    @foreach(\Leazycms\Web\Models\Notification::where('user_id', e_office_user()->id)->where('is_read', false)->latest()->take(5)->get() as $n)
+                                    <a href="{{ route('notifreader', $n->id) }}" class="block p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                                        <p class="text-xs font-semibold text-gray-800 mb-1">{{ $n->title }}</p>
+                                        <p class="text-[11px] text-gray-600 line-clamp-2">{{ $n->message }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">{{ $n->created_at->diffForHumans() }}</p>
+                                    </a>
+                                    @endforeach
+                                @else
+                                    <div class="p-4 text-center text-sm text-gray-500">Tidak ada notifikasi baru</div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 

@@ -31,6 +31,12 @@ class User extends BaseUser
         return $this->status == 'active';
     }
 
+    public function canViewSuratMasuk()
+    {
+        if (!$this->pejabat) return false;
+        return $this->pejabat->penerima_disposisi == 1 || in_array($this->pejabat->alias_jabatan, ['OPERATOR', 'KADIS', 'KASUBAGUMUM']);
+    }
+
     public function pejabat()
     {
         return $this->hasOne(Pejabat::class);

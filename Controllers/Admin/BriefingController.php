@@ -11,11 +11,21 @@ use App\Models\Plugins\EOffice\WaSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use App\Http\Controllers\Plugins\EOffice\Middleware\RedirectMiddleware;
 
-class BriefingController extends Controller
+class BriefingController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            RedirectMiddleware::handle(),
+        ];
+    }
     public function index()
     {
+        plugin_page_name('Briefing - E-Office');
         $user = e_office_user();
         $isKadis = false; // logic to determine if current user is Kadis
         
@@ -42,6 +52,7 @@ class BriefingController extends Controller
 
     public function create()
     {
+        plugin_page_name('Buat Briefing - E-Office');
         $pejabatUser = e_office_user()?->pejabat;
         
         // Ambil bawahan langsung (bawahan pertama)
@@ -126,10 +137,16 @@ class BriefingController extends Controller
 
                 $pejabatTujuan = Pejabat::find($penerima_id);
                 if ($pejabatTujuan && $pejabatTujuan->nohp) {
+                    $notifUrl = $briefing->addNotification([
+                        'to_user' => $pejabatTujuan->user_id,
+                        'title' => 'Tugas/Briefing Baru: ' . $briefing->judul,
+                        'message' => 'Ada Tugas/Briefing baru dari ' . (e_office_user()->pejabat?->nama ?? e_office_user()->name),
+                        'url' => plugin_route('e-office.briefing.show', $briefing->id)
+                    ]);
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Baru*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
+                        'text' => "*Tugas/Briefing Baru*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
                     ]);
                 }
             }
@@ -146,7 +163,7 @@ class BriefingController extends Controller
     public function show($id)
     {
         $briefing = Briefing::with(['checklists', 'disposisis.pengirim', 'disposisis.penerima'])->findOrFail($id);
-        
+        plugin_page_name($briefing->judul.' - Breafing - E-Office');
         $pejabat = e_office_user()->pejabat;
         $isKadis = ($briefing->user_id == e_office_user()->id);
 
@@ -230,10 +247,16 @@ class BriefingController extends Controller
 
                 $pejabatTujuan = Pejabat::find($penerima_id);
                 if ($pejabatTujuan && $pejabatTujuan->nohp) {
+                    $notifUrl = $briefing->addNotification([
+                        'to_user' => $pejabatTujuan->user_id,
+                        'title' => 'Tugas/Briefing Diteruskan: ' . $briefing->judul,
+                        'message' => 'Ada Tugas/Briefing yang diteruskan dari ' . (e_office_user()->pejabat?->nama ?? e_office_user()->name),
+                        'url' => plugin_route('e-office.briefing.show', $briefing->id)
+                    ]);
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Diteruskan*\n\nJudul: " . $briefing->judul . "\nDari: " . ($pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini.",
+                        'text' => "*Tugas/Briefing Diteruskan*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
                     ]);
                 }
             }

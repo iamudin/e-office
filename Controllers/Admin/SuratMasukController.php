@@ -277,6 +277,8 @@ class SuratMasukController extends Controller implements HasMiddleware
     {
         e_office_auth_check();
         $surat = Arsip::with('disposisis.pejabat')->find($surat);
+        plugin_page_name($surat->nomor_surat . " - Surat Masuk - E-Office");
+
         if (empty($surat)) {
             return redirect(plugin_route('e-office.surat-masuk.index'))->with('danger', 'Surat Tidak ditemukan');
         }
@@ -373,6 +375,8 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function index()
     {
+        plugin_page_name('Surat Masuk - E-Office');
+
         e_office_auth_check();
 
         $data = [];

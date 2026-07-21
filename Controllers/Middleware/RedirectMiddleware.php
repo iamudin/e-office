@@ -57,7 +57,9 @@ class RedirectMiddleware
                     return redirect()->to($url);
                 }
             }
-
+            if (!$request->is('login') && !e_office_user()) {
+                return redirect()->guest(plugin_route('login'))->with('error','Silahkan login terlebih dahulu');
+            }
             return $next($request);
         };
     }

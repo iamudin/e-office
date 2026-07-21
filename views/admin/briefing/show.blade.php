@@ -40,7 +40,7 @@
         @if(!$isKadis && isset($myDisposisi))
             @if($myDisposisi->pesan_diteruskan)
             <div class="px-6 py-4 bg-amber-50/50 border-t border-amber-100/60">
-                <h4 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2"><i class="fa fa-bullhorn mr-1"></i> Instruksi Tambahan Massal dari {{ $myDisposisi->pengirim->nama ?? 'Atasan' }}</h4>
+                <h4 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2"><i class="fa fa-bullhorn mr-1"></i> Instruksi Khusus {{ $myDisposisi->pengirim->nama ?? 'Atasan' }}</h4>
                 <div class="text-amber-900 whitespace-pre-wrap text-sm leading-relaxed">{{ $myDisposisi->pesan_diteruskan }}</div>
             </div>
             @endif
@@ -247,7 +247,7 @@
                             <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-sm text-gray-700">
                                 @if($disp->pesan_diteruskan)
                                 <div class="mb-2">
-                                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Instruksi Massal</span>
+                                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Instruksi Khusus</span>
                                     <div class="whitespace-pre-wrap">{{ $disp->pesan_diteruskan }}</div>
                                 </div>
                                 @endif
