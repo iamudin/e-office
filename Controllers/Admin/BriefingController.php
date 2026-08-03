@@ -28,9 +28,9 @@ class BriefingController extends Controller implements HasMiddleware
         plugin_page_name('Briefing - E-Office');
         $user = e_office_user();
         $isKadis = false; // logic to determine if current user is Kadis
-        
+
         $pejabat = $user->pejabat;
-        if($pejabat && str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis')) {
+        if ($pejabat && str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis')) {
             $isKadis = true;
         }
 
@@ -54,13 +54,13 @@ class BriefingController extends Controller implements HasMiddleware
     {
         plugin_page_name('Buat Briefing - E-Office');
         $pejabatUser = e_office_user()?->pejabat;
-        
+
         // Ambil bawahan langsung (bawahan pertama)
         $pejabats = Pejabat::with('tupoksis')
             ->where('atasan_id', $pejabatUser?->id)
             ->whereNotNull('user_id')
             ->get();
-            
+
         return view('e-office::admin.briefing.create', compact('pejabats'));
     }
 
@@ -74,7 +74,7 @@ class BriefingController extends Controller implements HasMiddleware
             'file_khusus' => 'nullable|array',
             'tupoksi_khusus' => 'nullable|array'
         ]);
-
+        //updater
         try {
             DB::beginTransaction();
 
@@ -92,8 +92,8 @@ class BriefingController extends Controller implements HasMiddleware
                 $fname = $briefing->addFile([
                     'file' => $request->file('file_lampiran_masal'),
                     'purpose' => 'briefing_lampiran_masal_' . $briefing->id,
-                    'random_name'=>true,
-                    'mime_type'=>['image/webp','application/pdf']
+                    'random_name' => true,
+                    'mime_type' => ['image/webp', 'application/pdf']
 
                 ]);
                 $briefing->update(['file_lampiran' => $fname]);
@@ -110,18 +110,18 @@ class BriefingController extends Controller implements HasMiddleware
                     'penerima_id' => $penerima_id,
                     'pesan_diteruskan' => $request->pesan_khusus[$penerima_id] ?? null
                 ]);
-                
+
                 if ($request->hasFile("file_khusus.{$penerima_id}")) {
                     $fname = $disposisi->addFile([
                         'file' => $request->file("file_khusus.{$penerima_id}"),
                         'purpose' => 'briefing_lampiran_khusus_' . $disposisi->id,
-                        'random_name'=>true,
-                    'mime_type'=>['image/webp','application/pdf']
+                        'random_name' => true,
+                        'mime_type' => ['image/webp', 'application/pdf']
 
                     ]);
                     $disposisi->update(['file_lampiran' => $fname]);
                 }
-                
+
                 // Simpan Tupoksi Khusus
                 if (isset($request->tupoksi_khusus[$penerima_id]) && is_array($request->tupoksi_khusus[$penerima_id])) {
                     foreach ($request->tupoksi_khusus[$penerima_id] as $kegiatan) {
@@ -165,7 +165,7 @@ class BriefingController extends Controller implements HasMiddleware
     public function show($id)
     {
         $briefing = Briefing::with(['checklists', 'disposisis.pengirim', 'disposisis.penerima'])->findOrFail($id);
-        plugin_page_name($briefing->judul.' - Breafing - E-Office');
+        plugin_page_name($briefing->judul . ' - Breafing - E-Office');
         $pejabat = e_office_user()->pejabat;
         $isKadis = ($briefing->user_id == e_office_user()->id);
 
@@ -174,7 +174,7 @@ class BriefingController extends Controller implements HasMiddleware
             $myDisposisi = BriefingDisposisi::where('briefing_id', $briefing->id)
                 ->where('penerima_id', $pejabat?->id)
                 ->first();
-                
+
             if ($myDisposisi && is_null($myDisposisi->dibaca_pada)) {
                 $myDisposisi->update(['dibaca_pada' => now()]);
             }
@@ -224,8 +224,8 @@ class BriefingController extends Controller implements HasMiddleware
                     $fname = $disposisi->addFile([
                         'file' => $request->file("file_khusus.{$penerima_id}"),
                         'purpose' => 'briefing_lampiran_khusus_' . $disposisi->id,
-                        'random_name'=>true,
-                        'mime_type'=>['image/webp','application/pdf']
+                        'random_name' => true,
+                        'mime_type' => ['image/webp', 'application/pdf']
                     ]);
                     $disposisi->update(['file_lampiran' => $fname]);
                 }
@@ -276,7 +276,7 @@ class BriefingController extends Controller implements HasMiddleware
             ->firstOrFail();
 
         $pejabatNama = $pejabat?->nama ?? e_office_user()->name;
-        
+
         $newEntry = [
             'waktu' => now()->format('d M Y, H:i'),
             'nama' => $pejabatNama,
@@ -293,17 +293,18 @@ class BriefingController extends Controller implements HasMiddleware
             $fname = $disposisi->addFile([
                 'file' => $request->file('balasan_file'),
                 'purpose' => 'briefing_balasan_' . $disposisi->id . '_' . time(),
-                'random_name'=>true,
-                'mime_type'=>['image/webp','application/pdf']
+                'random_name' => true,
+                'mime_type' => ['image/webp', 'application/pdf']
             ]);
             $updateData['balasan_file'] = $fname;
             $newEntry['file_url'] = url($fname);
         }
 
         $history = $disposisi->balasan_history ? json_decode($disposisi->balasan_history, true) : [];
-        if (!is_array($history)) $history = [];
+        if (!is_array($history))
+            $history = [];
         $history[] = $newEntry;
-        
+
         $updateData['balasan_history'] = json_encode($history);
 
         $disposisi->update($updateData);
@@ -328,9 +329,10 @@ class BriefingController extends Controller implements HasMiddleware
     {
         $request->validate(['feedback_kadis' => 'required|string']);
         $disposisi = BriefingDisposisi::findOrFail($id);
-        
+
         $briefing = $disposisi->briefing;
-        if ($briefing->user_id != e_office_user()->id) abort(403);
+        if ($briefing->user_id != e_office_user()->id)
+            abort(403);
 
         $disposisi->update(['feedback_kadis' => $request->feedback_kadis]);
 
@@ -341,7 +343,7 @@ class BriefingController extends Controller implements HasMiddleware
     {
         $disposisi = BriefingDisposisi::findOrFail($id);
         $pejabat = e_office_user()->pejabat;
-        
+
         if ($disposisi->pengirim_id != $pejabat?->id) {
             abort(403, 'Akses ditolak.');
         }
