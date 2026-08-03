@@ -36,12 +36,24 @@ class WaSender implements ShouldQueue
         }
   
     }
-    
+    private function formatPhoneNumber($number)
+    {
+        // Hapus karakter selain angka
+        $number = preg_replace('/[^0-9]/', '', $number);
+        
+        // Ubah awalan 0 menjadi 62
+        if (substr($number, 0, 1) === '0') {
+            $number = '62' . substr($number, 1);
+        }
+        
+        return $number;
+    }
+
     function sendDocument() 
     {
-        $response = Http::withoutVerifying()->post(config('e-office.api.wa_sender.url').'/message/send-document', [
-            'session' => config('e-office.api.wa_sender.session'),
-            'to' => $this->data['to'],
+        $response = Http::withoutVerifying()->post(config('e-office.wa_host').'/message/send-document', [
+            'session' => config('e-office.wa_session'),
+            'to' => $this->formatPhoneNumber($this->data['to']),
             'text' => $this->data['text'],
             'document_url' => $this->data['document_url'],
             'document_name' => $this->data['document_name'],
@@ -53,9 +65,9 @@ class WaSender implements ShouldQueue
     }
     function sendText() 
     {
-        $response = Http::withoutVerifying()->post(config('e-office.api.wa_sender.url').'/message/send-text', [
-            'session' => config('e-office.api.wa_sender.session'),
-            'to' => $this->data['to'],
+        $response = Http::withoutVerifying()->post(config('e-office.wa_host').'/message/send-text', [
+            'session' => config('e-office.wa_session'),
+            'to' => $this->formatPhoneNumber($this->data['to']),
             'text' => $this->data['text'],
             'is_group'=>false,
         ]);

@@ -15,12 +15,12 @@
                 
                 <div class="row">
                     <div class="col-md-6 form-group">
-                        <label class="font-weight-bold">NIP <span class="text-danger">*</span></label>
-                        <input type="text" name="nip" value="{{ old('nip', $data->nip ?? '') }}" required class="form-control">
+                        <label class="font-weight-bold">NIP</label>
+                        <input type="text" name="nip" value="{{ old('nip', $data->nip ?? '') }}" class="form-control" pattern="[0-9]+" oninput="this.value=this.value.replace(/[^0-9]/g,'');" title="NIP hanya boleh berisi angka">
                     </div>
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold">Nomor HP (WhatsApp) <span class="text-danger">*</span></label>
-                        <input type="text" name="nohp" value="{{ old('nohp', $data->nohp ?? '') }}" placeholder="628xxxx" required class="form-control">
+                        <input type="text" name="nohp" value="{{ old('nohp', $data->nohp ?? '') }}" placeholder="628xxxx / 08xxxx" required class="form-control" pattern="^(08|628)[0-9]*$" oninput="this.value=this.value.replace(/[^0-9]/g,'');" title="Nomor HP harus berupa angka dan diawali dengan 08 atau 628">
                     </div>
                 </div>
 

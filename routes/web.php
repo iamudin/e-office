@@ -1,14 +1,8 @@
 <?php
+if (file_exists(__DIR__ . '/../config/e-office.php')) {
+    Config::set('e-office', require __DIR__ . '/../config/e-office.php');
+}
 
-/*
-|--------------------------------------------------------------------------
-| E-Arsip Plugin Routes
-|--------------------------------------------------------------------------
-| Registered via add_plugin_public_route() for dual-domain support
-| (main domain: /e-office/... , custom domain: /...)
-*/
-
-// Load helpers
 require_once __DIR__ . '/../Helpers/functions.php';
 
 // ─── Namespace shortcuts ───

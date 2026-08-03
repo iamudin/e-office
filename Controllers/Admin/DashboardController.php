@@ -28,18 +28,14 @@ class DashboardController extends Controller implements HasMiddleware
 
         if($request->isMethod('PUT')){
             $data = $request->validate([
-                'url' => 'required|url',
-                'logo' => 'required|url',
                 'api_url' => 'required|url',
                 'api_session' => 'required|string',
                 'custom_domain' => 'nullable|string|max:100',
             ]);
             
             rewrite_env([
-                'APP_URL_EARSIP' => $data['url'],
-                'APP_LOGO_EARSIP' => $data['logo'],
-                'WA_SENDER_URL' => $data['api_url'],
-                'WA_SENDER_SESSION' => $data['api_session'],
+                'WA_HOST' => $data['api_url'],
+                'WA_SESSION' => $data['api_session'],
             ]);
 
             $domain = $request->custom_domain;
@@ -58,7 +54,6 @@ class DashboardController extends Controller implements HasMiddleware
                     ->delete();
             }
 
-            Artisan::call('config:cache');
             cache()->flush(); // Flush cache so new domain is immediately recognized
             
             return back()->with('success','Pengaturan berhasil disimpan');

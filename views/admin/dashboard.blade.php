@@ -20,13 +20,14 @@
             if ($isKadis) {
                 $stats[] = ['title' => 'Briefing Dibuat', 'value' => \App\Models\Plugins\EOffice\Briefing::where('user_id', $user->id)->count(), 'icon' => 'fa-bullhorn', 'color' => 'bg-purple-500'];
                 $stats[] = ['title' => 'Briefing Aktif', 'value' => \App\Models\Plugins\EOffice\Briefing::where('user_id', $user->id)->where('status', '!=', 'completed')->count(), 'icon' => 'fa-tasks', 'color' => 'bg-pink-500'];
+        $stats[] = ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\EOffice\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'];
+                
             } else {
                 $stats[] = ['title' => 'Briefing/Tugas Baru', 'value' => \App\Models\Plugins\EOffice\BriefingDisposisi::where('penerima_id', $pejabat->id)->whereNull('dibaca_pada')->count(), 'icon' => 'fa-bell', 'color' => 'bg-rose-500'];
                 $stats[] = ['title' => 'Total Tugas Diterima', 'value' => \App\Models\Plugins\EOffice\BriefingDisposisi::where('penerima_id', $pejabat->id)->count(), 'icon' => 'fa-tasks', 'color' => 'bg-purple-500'];
             }
         }
-
-        $stats[] = ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\EOffice\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'];
+        
     @endphp
     @foreach($stats as $stat)
     <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-4 transition-all hover:shadow-md">

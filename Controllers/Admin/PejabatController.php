@@ -14,10 +14,11 @@ class PejabatController extends Controller
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
         $request->validate([
-            'nip'=>'required',
-            'nama'=>'required',
-            'email'=>'required',
-            'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/'],
+            'nip'=>'nullable|numeric|unique:pejabats,nip,'.$pejabat->id,
+            'nohp'=>['required', 'numeric', 'regex:/^(08|628)[0-9]*$/', 'unique:pejabats,nohp,'.$pejabat->id],
+            'nama'=>'required|unique:pejabats,nama,'.$pejabat->id,
+            'email'=>'required|unique:users,email,'.$pejabat->user->id,
+            'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username,'.$pejabat->user->id],
             'password'=>['nullable', 'min:6', 'regex:/^\S+$/'],
             'jabatan'=>'required',
         ]);
@@ -52,10 +53,11 @@ class PejabatController extends Controller
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
         $request->validate([
-            'nip'=>'required',
-            'nama'=>'required',
-            'email'=>'required',
-            'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/'],
+            'nip'=>'nullable|numeric|unique:pejabats,nip',
+            'nohp'=>['required', 'numeric', 'regex:/^(08|628)[0-9]*$/', 'unique:pejabats,nohp'],
+            'nama'=>'required|unique:pejabats,nama',
+            'email'=>'required|unique:users,email',
+            'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username'],
             'password'=>['required', 'min:6', 'regex:/^\S+$/'],
             'jabatan'=>'required',
         ]);

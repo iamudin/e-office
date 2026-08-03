@@ -49,7 +49,7 @@
                 @csrf
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1.5 ml-1">Username / Email</label>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5 ml-1">Username / Email </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <i class="fa fa-user text-slate-400"></i>
