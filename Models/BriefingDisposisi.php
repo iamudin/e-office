@@ -24,7 +24,8 @@ class BriefingDisposisi extends Model
         'balasan_teks',
         'balasan_file',
         'feedback_kadis',
-        'is_validated_by_atasan'
+        'is_validated_by_atasan',
+        'balasan_history'
     ];
 
     protected $casts = [

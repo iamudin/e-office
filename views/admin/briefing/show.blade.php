@@ -35,7 +35,22 @@
             @endif
         </div>
         
-        <div class="p-6 text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{{ $briefing->pesan }}</div>
+        @php
+            $isTingkatPertama = false;
+            if (!$isKadis && isset($myDisposisi)) {
+                // Pejabat ID milik user pembuat briefing
+                $kadisPejabatId = $briefing->user->pejabat?->id;
+                if ($myDisposisi->pengirim_id == $kadisPejabatId) {
+                    $isTingkatPertama = true;
+                }
+            }
+        @endphp
+        
+        @if($isKadis || $isTingkatPertama)
+            <div class="p-6 text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{{ $briefing->pesan }}</div>
+        @else
+            <div class="p-6 text-gray-400 italic text-sm">Pesan/Instruksi massal dari Pimpinan hanya ditujukan untuk bawahan tingkat pertama. Anda hanya menerima instruksi khusus dari atasan langsung Anda.</div>
+        @endif
         
         @if(!$isKadis && isset($myDisposisi))
             @if($myDisposisi->pesan_diteruskan)
@@ -54,7 +69,7 @@
         @endif
         
         {{-- File Utama dari Pimpinan --}}
-        @if($briefing->file_lampiran)
+        @if(($isKadis || $isTingkatPertama) && $briefing->file_lampiran)
             <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -164,9 +179,33 @@
             <div class="p-0 max-h-[600px] overflow-y-auto">
                 <div class="divide-y divide-gray-100">
                     @php
-                        // Tampilkan semua alur disposisi agar struktur pohon (hirarki) tetap utuh
-                        // Namun balasan spesifik akan disembunyikan jika belum divalidasi
-                        $disposisisToView = $briefing->disposisis;
+                        if ($isKadis) {
+                            $disposisisToView = $briefing->disposisis;
+                        } else {
+                            $allowedIds = [];
+                            
+                            // 1. Tambahkan disposisi yang diterima oleh user (dari atasan)
+                            $myReceived = $briefing->disposisis->filter(fn($d) => $d->penerima_id == $pejabat?->id);
+                            foreach($myReceived as $mr) {
+                                $allowedIds[] = $mr->id;
+                            }
+                            
+                            // 2. Fungsi rekursif untuk mengumpulkan semua rantai disposisi di bawah user ini
+                            $getAllSubordinates = function($pengirimId) use (&$getAllSubordinates, $briefing, &$allowedIds) {
+                                $children = $briefing->disposisis->filter(fn($d) => $d->pengirim_id == $pengirimId);
+                                foreach($children as $child) {
+                                    $allowedIds[] = $child->id;
+                                    $getAllSubordinates($child->penerima_id);
+                                }
+                            };
+                            
+                            // Mulai kumpulkan dari user saat ini ke bawah
+                            if ($pejabat) {
+                                $getAllSubordinates($pejabat->id);
+                            }
+                            
+                            $disposisisToView = $briefing->disposisis->filter(fn($d) => in_array($d->id, $allowedIds));
+                        }
                         
                         // Buat peta penerima -> pengirim untuk menghitung level hierarki
                         $penerimaToPengirim = [];
@@ -274,18 +313,48 @@
 
                             @if($disp->dibalas_pada)
                                 @php
-                                    $canViewResponse = $disp->pengirim_id == $pejabat?->id || $disp->penerima_id == $pejabat?->id || $disp->is_validated_by_atasan;
+                                    $canViewResponse = $isKadis || $disp->pengirim_id == $pejabat?->id || $disp->penerima_id == $pejabat?->id || $disp->is_validated_by_atasan;
                                 @endphp
                                 
                                 @if($canViewResponse)
                                 <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-sm text-gray-800 mt-3">
-                                    <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider block mb-1"><i class="fa fa-reply mr-1"></i> Balasan</span>
-                                    <p class="whitespace-pre-wrap">{{ $disp->balasan_teks ?: 'Tidak ada teks balasan.' }}</p>
+                                    <span class="text-xs font-semibold text-indigo-600 uppercase tracking-wider block mb-3"><i class="fa fa-history mr-1"></i> Riwayat Progress / Balasan</span>
                                     
-                                    @if($disp->balasan_file)
-                                    <a href="{{ $disp->balasan_file}}" target="_blank" class="mt-2 inline-flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-800">
-                                        <i class="fa fa-paperclip"></i> Lihat Lampiran Balasan
-                                    </a>
+                                    @php
+                                        $history = $disp->balasan_history ? json_decode($disp->balasan_history, true) : null;
+                                    @endphp
+                                    
+                                    @if($history && is_array($history) && count($history) > 0)
+                                        <div class="space-y-3">
+                                            @foreach($history as $item)
+                                            <div class="bg-white p-3 rounded-lg border border-indigo-100/60 shadow-sm">
+                                                <div class="flex justify-between items-center mb-1.5 border-b border-gray-100 pb-1.5">
+                                                    <span class="text-[11px] font-bold text-gray-700"><i class="fa fa-user text-indigo-400 mr-1"></i> {{ $item['nama'] ?? 'Bawahan' }}</span>
+                                                    <span class="text-[10px] font-medium text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">{{ $item['waktu'] ?? '' }}</span>
+                                                </div>
+                                                <p class="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">{{ $item['pesan'] ?? '' }}</p>
+                                                
+                                                @if(!empty($item['file_url']))
+                                                <div class="mt-2 pt-2 border-t border-gray-50">
+                                                    <a href="{{ $item['file_url'] }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                                                        <i class="fa fa-paperclip"></i> Lihat Lampiran
+                                                    </a>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        {{-- Fallback untuk data lama --}}
+                                        <p class="whitespace-pre-wrap text-sm">{{ $disp->balasan_teks ?: 'Tidak ada teks balasan.' }}</p>
+                                        
+                                        @if($disp->balasan_file)
+                                        <div class="mt-2 pt-2 border-t border-indigo-100/50">
+                                            <a href="{{ $disp->balasan_file }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                                                <i class="fa fa-paperclip"></i> Lihat Lampiran Balasan
+                                            </a>
+                                        </div>
+                                        @endif
                                     @endif
                                     
                                     @if(!$isKadis && $disp->pengirim_id == $pejabat?->id && !$disp->is_validated_by_atasan)

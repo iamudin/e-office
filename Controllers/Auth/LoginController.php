@@ -22,7 +22,7 @@ class LoginController extends Controller implements HasMiddleware
     public function showLogin()
     {
         // dd(config('e-office.wa_host'));
-        plugin_page_name('Login ke E-Officec');
+        plugin_page_name('Login ke E-Office');
         if (session()->has('e_office_user_id')) {
             $user = e_office_user();
             if ($user && in_array($user->level, ['e-office'])) {

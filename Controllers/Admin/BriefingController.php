@@ -67,7 +67,6 @@ class BriefingController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
             'penerima_ids' => 'required|array',
             'pesan_masal' => 'nullable|string',
             'file_lampiran_masal' => 'nullable|file',
@@ -79,9 +78,12 @@ class BriefingController extends Controller implements HasMiddleware
         try {
             DB::beginTransaction();
 
+            $latestIndex = Briefing::whereDate('created_at', now()->toDateString())->count() + 1;
+            $generatedTitle = 'BRF-' . now()->format('Ymd') . '-' . str_pad($latestIndex, 3, '0', STR_PAD_LEFT);
+
             $briefing = Briefing::create([
                 'user_id' => e_office_user()->id,
-                'judul' => $request->judul,
+                'judul' => $generatedTitle,
                 'pesan' => $request->pesan_masal,
                 'status' => 'in_progress'
             ]);
@@ -217,9 +219,7 @@ class BriefingController extends Controller implements HasMiddleware
                     'pesan_khusus' => $request->pesan_khusus[$penerima_id] ?? null
                 ]);
 
-                // Handle file (File khusus atau file yang diteruskan)
-                $forwardedFile = $myDisposisi ? $myDisposisi->file_lampiran : $briefing->file_lampiran;
-                
+                // Hanya gunakan file yang secara eksplisit dikirim oleh bawahan (tidak otomatis copy dari atasan)
                 if ($request->hasFile("file_khusus.{$penerima_id}")) {
                     $fname = $disposisi->addFile([
                         'file' => $request->file("file_khusus.{$penerima_id}"),
@@ -228,8 +228,6 @@ class BriefingController extends Controller implements HasMiddleware
                         'mime_type'=>['image/webp','application/pdf']
                     ]);
                     $disposisi->update(['file_lampiran' => $fname]);
-                } else if ($forwardedFile) {
-                    $disposisi->update(['file_lampiran' => $forwardedFile]);
                 }
 
                 // Simpan Tupoksi Khusus
@@ -277,21 +275,36 @@ class BriefingController extends Controller implements HasMiddleware
             ->where('penerima_id', $pejabat?->id)
             ->firstOrFail();
 
+        $pejabatNama = $pejabat?->nama ?? e_office_user()->name;
+        
+        $newEntry = [
+            'waktu' => now()->format('d M Y, H:i'),
+            'nama' => $pejabatNama,
+            'pesan' => $request->balasan_teks,
+            'file_url' => null
+        ];
+
         $updateData = [
-            'balasan_teks' => $request->balasan_teks,
-            'dibalas_pada' => now()
+            'dibalas_pada' => now(),
+            'balasan_teks' => $request->balasan_teks // simpan balasan terakhir
         ];
 
         if ($request->hasFile('balasan_file')) {
             $fname = $disposisi->addFile([
                 'file' => $request->file('balasan_file'),
-                'purpose' => 'briefing_balasan_' . $disposisi->id,
+                'purpose' => 'briefing_balasan_' . $disposisi->id . '_' . time(),
                 'random_name'=>true,
                 'mime_type'=>['image/webp','application/pdf']
-
             ]);
             $updateData['balasan_file'] = $fname;
+            $newEntry['file_url'] = url($fname);
         }
+
+        $history = $disposisi->balasan_history ? json_decode($disposisi->balasan_history, true) : [];
+        if (!is_array($history)) $history = [];
+        $history[] = $newEntry;
+        
+        $updateData['balasan_history'] = json_encode($history);
 
         $disposisi->update($updateData);
 

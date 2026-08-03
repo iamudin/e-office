@@ -27,10 +27,7 @@
             
             <!-- BAGIAN INSTRUKSI MASSAL -->
             <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Judul Tugas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="judul" required class="w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2.5 px-3 border outline-none" placeholder="Masukkan judul tugas...">
-                </div>
+
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
