@@ -328,6 +328,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'file' => $request->file('file_surat'),
                 'mime_type' => ['application/pdf'],
                 'purpose' => 'file-surat-' . $data->id,
+                'random_name'=>true
             ]);
             $data->update(['file_surat' => $fname]);
             if (!empty($fname)) {
@@ -369,6 +370,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'file' => $request->file('file_surat'),
                 'mime_type' => ['application/pdf'],
                 'purpose' => 'file_surat_' . $surat_masuk->id,
+                'random_name'=>true
             ]);
             $surat_masuk->update(['file_surat' => $fname]);
         }
@@ -377,9 +379,9 @@ class SuratMasukController extends Controller implements HasMiddleware
 
     public function index()
     {
-        plugin_page_name('Surat Masuk - E-Office');
 
         e_office_auth_check();
+        plugin_page_name('Surat Masuk - E-Office');
 
         $data = [];
         return view('e-office::admin.surat-masuk.index', $data);
