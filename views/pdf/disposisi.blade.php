@@ -1,161 +1,138 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>PDF</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			margin: 0;
-			padding: 0;
-			font-size: 14px;
-		}
+<center>
+    <img src="{{media_path(get_option('logo_organisasi'))}}" style="float:left;height:70px;margin-right:10px;">
+    
+    <h3 style="margin-top:10;padding-top:0;margin-bottom:30px">
+        PEMERINTAH KABUPATEN BENGKALIS<br>
+                <span style="font-size:16px;">
+        {{ str(get_option('nama_organisasi'))->upper() }}
 
-		table {
-			width: 100%;
-			border-collapse: collapse;
-			margin-bottom: 20px;
-		}
-		
-		.header {
-			width: 100%;
-			border-bottom: 2px solid #000;
-			padding-bottom: 10px;
-			margin-bottom: 20px;
-		}
+        </span>
 
-		.header img {
-			width: 80px;
-			height: auto;
-		}
-		.header-title {
-			text-align: center;
-		}
-		.header-title h1 {
-			margin: 0;
-			font-size: 18px;
-			text-transform: uppercase;
-		}
-		.header-title h2 {
-			margin: 0;
-			font-size: 14px;
-			font-weight: normal;
-		}
-		.header-title p {
-			margin: 0;
-			font-size: 12px;
-		}
+    </h3>
+    <hr style="border-top: 1px solid #000;margin:0;padding:0">
+    <hr style="border-bottom: 2px solid #000;margin:0;padding:0">
+</center>
+<br>
+<style>
+    table {
+        border-width: 2px;
+        border-collapse: collapse;
+        border-style: solid;
+    }
 
-		th, td {
-			border: 1px solid #000;
-			padding: 8px;
-			text-align: left;
-			vertical-align: top;
-		}
+    table tr td {
+        border-width: 2px;
+        border-collapse: collapse;
+        border-style: solid;
+        border-color:#000;
+    }
+</style>
+<table border="1" style="border-collapse: collapse;width: 100%;border-bottom: none !important;">
+    <tr>
+        <td align="center" colspan="2" style="border-bottom:none !important">
+            <h3 style="line-height: normal;padding:5px 0;margin:0;">LEMBAR DISPOSISI</h3>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:50%;border-bottom:none;vertical-align: top;padding-left:5px">Surat dari : {{ $data->surat_dari }}<br>
+            No. Surat : {{ $data->nomor_surat }}
+            <br>
+            Tgl. Surat : {{ $data->tanggal_surat->translatedFormat('d F Y') }}
+        </td>
+        <td style="width:50%;border-bottom:none;vertical-align: top;padding:0 0 5px 5px">Diterima Tgl :  {{ $data->tanggal_terima->translatedFormat('d F Y') }}
+            <br>
+            No. Agenda : {{ $data->nomor_agenda }}<br>
+            Sifat : <br>
+            @foreach(['Segera', 'Sangat Segera', 'Rahasia'] as $sifat)
+            @if(str($sifat)->upper() == $data->sifat)
+            <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
+            @else 
+            <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;color:#fff">✔</span>
+            @endif
+             {{ $sifat }}
+        
+            @endforeach
+            
+        </td>
+    </tr>
 
-		th {
-			text-align: center;
-			font-weight: bold;
-		}
 
-		.checklist-box {
-			width: 15px;
-			height: 15px;
-			border: 1px solid #000;
-			display: inline-block;
-			margin-right: 5px;
-			vertical-align: middle;
-		}
+</table>
 
-		.disposisi-table td {
-			width: 50%;
-		}
+<table border="1"
+    style="border-collapse: collapse;width: 100%;border-top:none !important;border-bottom: none !important;">
 
-		.no-border {
-			border: none !important;
-		}
-	</style>
-</head>
-<body>
-	<table class="header no-border">
-		<tr>
-			<td width="15%" class="no-border text-center" style="text-align: center;">
-				<img src="{{ config('e-office.logo') }}" alt="Logo" style="width: 70px;">
-			</td>
-			<td width="85%" class="no-border header-title">
-				<h1 style="font-size: 22px;">PEMERINTAH KABUPATEN BENGKALIS</h1>
-				<h2 style="font-size: 18px; font-weight: bold;">DINAS PERKEBUNAN</h2>
-				<p>Jalan Pertanian, Bengkalis, Riau 28711</p>
-			</td>
-		</tr>
-	</table>
+    <tr>
+        <td style="width:15%;height: 100px;vertical-align: top;border-bottom:none !important;padding-left:5px">Hal </td>
+        <td style="vertical-align: top;border-bottom:none">: {{ $data->hal }}</td>
+    </tr>
+</table>
+<style>
+        ul {
+        list-style-type: none;
+        padding-left: 0;
+      
+    }
 
-	<h2 style="text-align: center; margin: 10px 0; text-decoration: underline; font-size: 16px;">LEMBAR DISPOSISI</h2>
+</style>
 
-	<table>
-		<tr>
-			<td width="50%">
-				<strong>Surat Dari:</strong> {{ $data->surat_dari }}<br><br>
-				<strong>Tanggal Surat:</strong> {{ $data->tanggal_surat->format('d/m/Y') }}<br><br>
-				<strong>Nomor Surat:</strong> {{ $data->nomor_surat }}
-			</td>
-			<td width="50%">
-				<strong>Diterima Tanggal:</strong> {{ $data->tanggal_terima->format('d/m/Y') }}<br><br>
-				<strong>Nomor Agenda:</strong> {{ $data->nomor_agenda }}<br><br>
-				<strong>Sifat:</strong> {{ $data->sifat }}
-			</td>
-		</tr>
-		<tr>
-			<td colspan="2">
-				<strong>Hal:</strong><br>
-				{{ $data->hal }}
-			</td>
-		</tr>
-	</table>
+<table border="1" style="border-collapse: collapse;width: 100%;border-top:none !important">
 
-	<table class="disposisi-table">
-		<tr>
-			<th>DITERUSKAN KEPADA SDR/I :</th>
-			<th>DENGAN HORMAT HARAP :</th>
-		</tr>
-		<tr>
-			<td>
-				@foreach($penerima as $row)
-				<div style="margin-bottom: 5px;">
-					<div class="checklist-box" style="{{ $row->id == $data->disposisis[0]->pejabat_id ? 'background-color: black;' : '' }}"></div>
-					{{ $row->jabatan }}
-				</div>
-				@endforeach
-			</td>
-			<td>
-				@foreach(['Tanggapan dan Saran', 'Proses Lebih lanjut', 'Koordinasi / Konfirmasikan'] as $row)
-				<div style="margin-bottom: 5px;">
-					<div class="checklist-box" style="{{ is_array($data->harapan) && in_array($row, $data->harapan) ? 'background-color: black;' : '' }}"></div>
-					{{ $row }}
-				</div>
-				@endforeach
-			</td>
-		</tr>
-		<tr>
-			<td colspan="2" style="height: 100px;">
-				<strong>Catatan:</strong><br>
-				{{ $data->catatan }}
-			</td>
-		</tr>
-	</table>
-    <br><br>
-    <div style="width: 100%; text-align: right;">
-        @if($data->kadis)
-        <div style="float: right; width: 300px; text-align: center;">
-            <strong>KEPALA DINAS PERKEBUNAN</strong><br>
-            <br><br><br>
-            <strong><u>{{ $data->kadis->nama }}</u></strong><br>
-            {{ $data->kadis->pangkat_golongan }}<br>
-            NIP. {{ $data->kadis->nip }}
-        </div>
-        @endif
-        <div style="clear: both;"></div>
-    </div>
-</body>
-</html>
+    <tr>
+        <td style="width:50%;padding:0 0 10px 5px;vertical-align: top">Diteruskan kepada Sdr :
+            <ul class="checklist" style="margin:0;padding:0 0 0 10px;list-style:none">
+                @foreach($penerima as $row)
+                @if(in_array($row->id, $data->disposisis->pluck('pejabat_id')->toArray()))
+
+                <li>
+                    <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
+                   
+                   {{ $row->nama }} - {{ $row->jabatan }}
+                </li>
+                    @endif 
+
+                @endforeach
+            </ul>
+        </td>
+        <td style="padding:0 0 10px 5px">
+            Dengan hormat harap :
+            <ul class="checklist" style="margin:0;padding:0 0 0 10px;list-style:none">
+                @foreach(['Tanggapan dan Saran', 'Proses Lebih lanjut', 'Koordinasi / Konfirmasikan'] as $row)
+                <li>
+                    @if(in_array($row, $data->harapan))
+                    <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
+                    @else 
+                    <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;color:#fff">✔</span>
+                    @endif
+                    {{ $row }} </li>
+                @endforeach
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td  style="vertical-align: top;border-right:none !important;padding-left:5px">
+            Catatan :
+        <ul style="list-style-type: disc;padding-left:20px">
+            <li>Kepala Dinas <br> <i>{{ $data->catatan ?? '-' }}</i> </li>
+            @foreach($data->disposisis as $row)
+            <li style="margin-top:10px">{{ $row->pejabat->jabatan }}<br><i>{{ $row->catatan }}</i></li>
+            @endforeach
+        </ul>
+      
+        </td>
+        <td style="vertical-align: bottom;border-left:none !important">
+            <div class="ttd" style="margin-top:150px;padding:20px;font-size:16px;">
+                KEPALA {{ str(get_option('nama_organisasi'))->upper() }}<br>KABUPATEN {{ str(get_option('kabupaten'))->upper() }}<br>
+                <br>
+                <br>
+                dto
+                <br>
+                <br>
+                <br>
+                {{$data->kadis->nama}}<br>
+                {{ $data->kadis->pangkat_golongan }}<br>
+                NIP. {{$data->kadis->nip}}
+            </div>
+        </td>
+    </tr>
+</table>
