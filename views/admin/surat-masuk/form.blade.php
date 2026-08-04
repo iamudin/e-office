@@ -23,22 +23,22 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Nomor Surat <span class="text-rose-500">*</span></label>
-                    <input type="text" name="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat ?? '') }}" required class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <input type="text" name="nomor_surat" value="{{ old('nomor_surat', $data->nomor_surat ?? '') }}" required class="w-full px-5 py-3 rounded-xl border border-slate-300 shadow-sm text-base text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Asal Instansi/Pengirim <span class="text-rose-500">*</span></label>
-                    <input type="text" name="surat_dari" value="{{ old('surat_dari', $data->surat_dari ?? '') }}" required class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <input type="text" name="surat_dari" value="{{ old('surat_dari', $data->surat_dari ?? '') }}" required class="w-full px-5 py-3 rounded-xl border border-slate-300 shadow-sm text-base text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Tanggal Surat <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal_surat" value="{{ old('tanggal_surat', $data && $data->tanggal_surat ? $data->tanggal_surat->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <input type="date" name="tanggal_surat" value="{{ old('tanggal_surat', $data && $data->tanggal_surat ? $data->tanggal_surat->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full px-5 py-3 rounded-xl border border-slate-300 shadow-sm text-base text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Perihal <span class="text-rose-500">*</span></label>
-                    <textarea name="hal" rows="3" required class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('hal', $data->hal ?? '') }}</textarea>
+                    <textarea name="hal" rows="3" required class="w-full px-5 py-3 rounded-xl border border-slate-300 shadow-sm text-base text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors">{{ old('hal', $data->hal ?? '') }}</textarea>
                 </div>
             </div>
 
@@ -48,7 +48,7 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Tanggal Terima <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal_terima" value="{{ old('tanggal_terima', $data && $data->tanggal_terima ? $data->tanggal_terima->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <input type="date" name="tanggal_terima" value="{{ old('tanggal_terima', $data && $data->tanggal_terima ? $data->tanggal_terima->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full px-5 py-3 rounded-xl border border-slate-300 shadow-sm text-base text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors">
                 </div>
                 
                 <div>
@@ -72,7 +72,7 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">File Surat (PDF) @if(!$data) <span class="text-rose-500">*</span> @endif</label>
-                    <input type="file" name="file_surat" accept="application/pdf" {{ !$data ? 'required' : '' }} class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors border border-slate-200 rounded-xl">
+                    <input type="file" name="file_surat" accept="application/pdf" {{ !$data ? 'required' : '' }} class="block w-full text-base text-slate-600 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors  rounded-xl py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
                     
                     @if(isset($data) && $data->file_surat && media_exists($data->file_surat))
                         <div class="mt-3">

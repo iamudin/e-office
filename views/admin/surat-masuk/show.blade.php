@@ -231,7 +231,7 @@
                                         
                                         <div class="mb-4">
                                             <label class="block text-sm font-semibold text-slate-800 mb-2">Catatan Kadis:</label>
-                                            <textarea name="catatan" rows="3" class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" placeholder="Tuliskan instruksi atau catatan disini..."></textarea>
+                                            <textarea name="catatan" rows="3" class="w-full rounded-xl p-2 border border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" placeholder="Tuliskan instruksi atau catatan disini..."></textarea>
                                         </div>
                                         
                                         <button type="submit" name="kadis_meneruskan" value="1" class="px-5 py-2.5 bg-indigo-600 text-white font-medium text-sm rounded-xl hover:bg-indigo-700 shadow-sm shadow-indigo-600/20">

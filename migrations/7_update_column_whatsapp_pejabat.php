@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('disposisis', function (Blueprint $table) {
-            if (!Schema::hasColumn( 'disposisis', 'whatsapp_pejabat')) {
+            if (Schema::hasColumn( 'disposisis', 'whatsapp_pejabat')) {
                     $table->string('whatsapp_pejabat')->nullable()->change();
 
             }
