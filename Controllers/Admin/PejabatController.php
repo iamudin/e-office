@@ -14,7 +14,7 @@ class PejabatController extends Controller
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
         $request->validate([
-            'nip'=>'nullable|numeric|unique:pejabats,nip,'.$pejabat->id,
+            'nip'=>['nullable','regex:/^[0-9 ]+$/','unique:pejabats,nip,'.$pejabat->id],
             'nohp'=>['required', 'numeric', 'regex:/^(08|628)[0-9]*$/', 'unique:pejabats,nohp,'.$pejabat->id],
             'nama'=>'required|unique:pejabats,nama,'.$pejabat->id,
             'email'=>'required|unique:users,email,'.$pejabat->user->id,
