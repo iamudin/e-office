@@ -1,7 +1,7 @@
 @extends('e-office::layout.app', ['title' => 'Buat Briefing / Tugas Baru'])
 
 @section('content')
-<div class="max-w-6xl mx-auto">
+<div class="max-w-full mx-auto">
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="bg-indigo-50/50 p-6 border-b border-indigo-100 flex items-center justify-between">
             <div>

@@ -54,7 +54,7 @@ class BriefingController extends Controller implements HasMiddleware
     {
         plugin_page_name('Buat Briefing - E-Office');
         $pejabatUser = e_office_user()?->pejabat;
-
+        abort_if($pejabatUser->alias_jabatan !== 'KADIS', 404, 'Anda tidak memiliki akses untuk membuat briefing.');
         // Ambil bawahan langsung (bawahan pertama)
         $pejabats = Pejabat::with('tupoksis')
             ->where('atasan_id', $pejabatUser?->id)
