@@ -16,7 +16,7 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold">NIP</label>
-                        <input type="text" name="nip" value="{{ old('nip', $data->nip ?? '') }}" class="form-control" pattern="[0-9]+" oninput="this.value=this.value.replace(/[^0-9]/g,'');" title="NIP hanya boleh berisi angka">
+                        <input type="text" name="nip" value="{{ old('nip', $data->nip ?? '') }}" class="form-control" pattern="[0-9 ]+" oninput="this.value=this.value.replace(/[^0-9 ]/g,'');" title="NIP hanya boleh berisi angka dan spasi">
                     </div>
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold">Nomor HP (WhatsApp) <span class="text-danger">*</span></label>
