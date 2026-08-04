@@ -85,7 +85,7 @@
                         <li>
                             <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
 
-                            {{ $row->nama }} - {{ $row->jabatan }}
+                            {{ $row->nama ?? ''}} - {{ $row->jabatan ?? '' }}
                         </li>
                     @endif
                 @endforeach
@@ -127,9 +127,9 @@
                 <br>
                 <br>
         
-            {{$data->kadis->nama}}<br>
-                {{ $data->kadis->pangkat_golongan }}<br>
-                   NIP. {{$data->kadis->nip}}
+            {{$data->kadis?->nama ?? ''}}<br>
+                {{ $data->kadis?->pangkat_golongan  ?? '' }}<br>
+                   NIP. {{$data->kadis?->nip ?? ''}}
             </div>
         </td>
     </tr>
