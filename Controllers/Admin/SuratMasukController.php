@@ -156,12 +156,14 @@ class SuratMasukController extends Controller implements HasMiddleware
     public function create()
     {
         e_office_auth_check();
+        plugin_page_name("Tambah Surat Masuk - E-Office");
         return view('e-office::admin.surat-masuk.form', ['data' => null, 'noagenda' => Arsip::count() + 1]);
     }
 
     public function edit(Arsip $surat_masuk)
     {
         e_office_auth_check();
+        plugin_page_name($surat_masuk->nomor_surat . " - Surat Masuk - E-Office");
         return view('e-office::admin.surat-masuk.form', ['data' => $surat_masuk]);
     }
 
