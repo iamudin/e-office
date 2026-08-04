@@ -43,15 +43,18 @@ class DashboardController extends Controller implements HasMiddleware
                 $domain = parse_url($domain, PHP_URL_HOST);
             }
             
+            $optionKey = ['name' => 'e-office-domain'];
+            if (config('modules.multisite_enabled')) {
+                $optionKey['tenant_id'] = tenant() ? tenant()->id : null;
+            }
+
             if ($domain) {
                 \Leazycms\Web\Models\Option::updateOrCreate(
-                    ['name' => 'e-office-domain', 'tenant_id' => tenant() ? tenant()->id : null],
+                    $optionKey,
                     ['value' => $domain, 'autoload' => 1]
                 );
             } else {
-                \Leazycms\Web\Models\Option::where('name', 'e-office-domain')
-                    ->where('tenant_id', tenant() ? tenant()->id : null)
-                    ->delete();
+                \Leazycms\Web\Models\Option::where($optionKey)->delete();
             }
 
             cache()->flush(); // Flush cache so new domain is immediately recognized
