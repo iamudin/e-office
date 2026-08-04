@@ -72,7 +72,7 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">File Surat (PDF) @if(!$data) <span class="text-rose-500">*</span> @endif</label>
-                    <input type="file" name="file_surat" accept="application/pdf" {{ !$data ? 'required' : '' }} class="block w-full text-base text-slate-600 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors  rounded-xl py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
+                    <input type="file" data-max-size="20000000" name="file_surat" accept="application/pdf" {{ !$data ? 'required' : '' }} class="block w-full text-base text-slate-600 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors  rounded-xl py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
                     
                     @if(isset($data) && $data->file_surat && media_exists($data->file_surat))
                         <div class="mt-3">
