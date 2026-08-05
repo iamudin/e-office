@@ -148,7 +148,7 @@ class BriefingController extends Controller implements HasMiddleware
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Baru*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
+                        'text' => "*Tugas Baru hari ini*\n\nWaktu: " . $briefing->created_at->format('d M Y H:i') . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
                     ]);
                 }
             }
@@ -254,7 +254,7 @@ class BriefingController extends Controller implements HasMiddleware
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas/Briefing Diteruskan*\n\nJudul: " . $briefing->judul . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
+                        'text' => "*Tugas Hari ini*\n\nWaktu: " . $disposisi->created_at->format('d M Y, H:i') . "\nPengirim: " . (e_office_user()->pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
                     ]);
                 }
             }
@@ -365,5 +365,25 @@ class BriefingController extends Controller implements HasMiddleware
         ]);
 
         return redirect(plugin_route('e-office.briefing.index'))->with('success', 'Briefing/Tugas diselesaikan.');
+    }
+
+    public function destroy($id)
+    {
+        $briefing = Briefing::findOrFail($id);
+        
+        if ($briefing->user_id !== e_office_user()->id) {
+            return back()->with('error', 'Akses ditolak. Anda tidak berhak menghapus tugas ini.');
+        }
+
+        try {
+            DB::beginTransaction();
+            $briefing->delete();
+            DB::commit();
+            
+            return back()->with('success', 'Briefing/Tugas berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

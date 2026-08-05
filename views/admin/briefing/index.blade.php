@@ -52,9 +52,20 @@
                                 </span>
                             </td>
                             <td class="p-4 text-right">
-                                <a href="{{ plugin_route('e-office.briefing.show', $briefing->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm">
-                                    <i class="fa fa-eye"></i>
-                                </a>
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ plugin_route('e-office.briefing.show', $briefing->id) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm" title="Detail">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    @if($isKadis)
+                                    <form action="{{ plugin_route('e-office.briefing.destroy', $briefing->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tugas ini?');" class="inline-block">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm" title="Hapus">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
