@@ -42,6 +42,7 @@ class BriefingController extends Controller implements HasMiddleware
         } else {
             // Jika bawahan, tampilkan disposisi briefing yang diterima
             $briefings = BriefingDisposisi::with('briefing')
+                ->whereHas('briefing')
                 ->where('penerima_id', $pejabat?->id)
                 ->orderBy('created_at', 'desc')
                 ->get();
