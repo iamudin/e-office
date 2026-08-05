@@ -31,10 +31,10 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($briefings as $item)
-                            @php 
-                                                            $briefing = $item;
-                                $statusColor = $briefing->status == 'completed' ? 'emerald' : ($briefing->status == 'in_progress' ? 'amber' : 'slate');
-                                $statusText = $briefing->status == 'completed' ? 'Selesai' : ($briefing->status == 'in_progress' ? 'Diproses' : 'Menunggu');
+                            @php
+                                $briefing = $isKadis ? $item : $item->briefing;
+                                $statusColor = $item->status == 'completed' ? 'emerald' : ($item->status == 'in_progress' ? 'amber' : 'slate');
+                                $statusText = $item->status == 'completed' ? 'Selesai' : ($item->status == 'in_progress' ? 'Diproses' : 'Menunggu');
                             @endphp
                             <tr class="hover:bg-gray-50/50 transition-colors">
                                 <td class="p-4">
