@@ -242,11 +242,10 @@ class SuratMasukController extends Controller implements HasMiddleware
         if ($request->kadis_meneruskan) {
             $request->validate([
                 'pejabat_id' => 'array|required',
-                'harapan' => 'array|required',
+                'harapan' => 'nullable|array',
                 'catatan' => 'string|nullable',
             ], [
                 'pejabat_id.required' => 'Silahkan ceklis pejabat yang ingin diteruskan',
-                'harapan.required' => 'Silahkan ceklis salah satu harapan dipsosisi',
             ]);
             $arsip->update([
                 'catatan' => $request->catatan,
@@ -328,7 +327,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'file' => $request->file('file_surat'),
                 'mime_type' => ['application/pdf'],
                 'purpose' => 'file-surat-' . $data->id,
-                'random_name'=>true
+                'random_name' => true
             ]);
             $data->update(['file_surat' => $fname]);
             if (!empty($fname)) {
@@ -370,7 +369,7 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'file' => $request->file('file_surat'),
                 'mime_type' => ['application/pdf'],
                 'purpose' => 'file_surat_' . $surat_masuk->id,
-                'random_name'=>true
+                'random_name' => true
             ]);
             $surat_masuk->update(['file_surat' => $fname]);
         }

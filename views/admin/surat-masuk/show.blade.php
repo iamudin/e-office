@@ -191,7 +191,10 @@
                                     <div class="mb-3">
                                         <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Dengan Harapan</p>
                                         <ul class="list-disc list-inside text-sm text-slate-700 space-y-0.5">
-                                            @foreach($data->harapan as $row) <li>{{ $row }}</li> @endforeach
+                                            @forelse($data->harapan ?? [] as $row) <li>{{ $row }}</li> 
+                                            @empty
+                                                <li>Tidak ada harapan</li>
+                                            @endforelse
                                         </ul>
                                     </div>
                                     <div>
