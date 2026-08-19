@@ -368,7 +368,7 @@ class SuratMasukController extends Controller implements HasMiddleware
             $fname = $surat_masuk->addFile([
                 'file' => $request->file('file_surat'),
                 'mime_type' => ['application/pdf'],
-                'purpose' => 'file_surat_' . $surat_masuk->id,
+                'purpose' => 'file-surat-' . $surat_masuk->id,
                 'random_name' => true
             ]);
             if(empty($fname)){
