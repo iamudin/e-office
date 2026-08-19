@@ -371,6 +371,10 @@ class SuratMasukController extends Controller implements HasMiddleware
                 'purpose' => 'file_surat_' . $surat_masuk->id,
                 'random_name' => true
             ]);
+            if(empty($fname)){
+        return back()->with('danger', 'File Surat Gagal diupload');
+
+            }
             $surat_masuk->update(['file_surat' => $fname]);
         }
         return back()->with('success', 'Berhasil di perbaharui');

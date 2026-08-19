@@ -61,7 +61,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Sifat Surat <span class="text-rose-500">*</span></label>
                     <div class="flex flex-wrap gap-4">
-                        @foreach(['Sangat Segera', 'Segera', 'Rahasia'] as $sifat)
+                        @foreach(['Sangat Segera', 'Segera', 'Rahasia','Biasa'] as $sifat)
                             <label class="inline-flex items-center">
                                 <input type="radio" name="sifat" value="{{ strtoupper($sifat) }}" {{ (old('sifat', $data->sifat ?? '') == strtoupper($sifat)) ? 'checked' : '' }} required class="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500">
                                 <span class="ml-2 text-sm text-slate-700">{{ $sifat }}</span>
