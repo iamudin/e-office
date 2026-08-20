@@ -1,7 +1,7 @@
 {
   "title": "E-Arsip",
   "description": "Modul untuk mengelola arsip surat masuk elektronik dengan fitur disposisi dan integrasi WhatsApp.",
-  "version": "v1.0.18",
+  "version": "v1.0.19",
   "repository": "iamudin/e-office",
   "name": "e-office"
 }
