@@ -322,32 +322,53 @@ class SuratMasukController extends Controller implements HasMiddleware
             'sifat' => $request->sifat,
             'tanggal_terima' => $request->tanggal_terima,
         ]);
+        $fname = null;
         if ($request->hasFile('file_surat')) {
             $fname = $data->addFile([
                 'file' => $request->file('file_surat'),
-                'mime_type' => ['application/pdf'],
+                'mime_type' => [
+                    'application/pdf',
+                    'application/x-pdf',
+                    'application/acrobat',
+                    'applications/vnd.pdf',
+                    'text/pdf',
+                    'text/x-pdf'
+                ],
                 'purpose' => 'file-surat-' . $data->id,
                 'random_name' => true
             ]);
-            $data->update(['file_surat' => $fname]);
-            if (!empty($fname)) {
-                $pdfifle = File::whereFileName(basename($fname))->first()->file_path;
-                $this->storePdfPathToConvert(Storage::path($pdfifle));
-                $pejabat = Pejabat::select('user_id', 'nohp')->whereAliasJabatan('KASUBAGUMUM')->first();
-                if (empty($pejabat)) {
-                    return back()->with('warning', 'Belum bisa input surat, Kasubag Umum belum tersedia');
-                }
-                $notif = $data->addNotification([
-                    'to_user' => $pejabat->user_id,
-                    'title' => 'Surat Baru NO. ' . $request->nomor_surat,
-                    'message' => 'Ada surat Terbaru untuk anda',
-                    'url' => plugin_route('e-office.surat-masuk.show', $data->id),
-                ]);
-                WaSender::dispatch([
-                    'to' => $pejabat->nohp,
-                    'text' => "Surat masuk dari " . $data->surat_dari . ".\nKlik tautan berikut untuk melihat\n" . $notif,
-                ]);
+            if (empty($fname)) {
+                return back()->with('danger', 'File Surat Gagal diupload');
             }
+            $data->update(['file_surat' => $fname]);
+        } elseif ($request->filled('file_surat') && is_string($request->file_surat)) {
+            $filePath = $request->file_surat;
+            if (!str_starts_with($filePath, '/media/') && !str_starts_with($filePath, 'http')) {
+                $filePath = '/media/' . ltrim($filePath, '/');
+            }
+            $fname = $filePath;
+            $data->update(['file_surat' => $fname]);
+        }
+
+        if (!empty($fname)) {
+            $fileRecord = File::whereFileName(basename($fname))->first();
+            if ($fileRecord && $fileRecord->file_path) {
+                $this->storePdfPathToConvert(Storage::path($fileRecord->file_path));
+            }
+            $pejabat = Pejabat::select('user_id', 'nohp')->whereAliasJabatan('KASUBAGUMUM')->first();
+            if (empty($pejabat)) {
+                return back()->with('warning', 'Belum bisa input surat, Kasubag Umum belum tersedia');
+            }
+            $notif = $data->addNotification([
+                'to_user' => $pejabat->user_id,
+                'title' => 'Surat Baru NO. ' . $request->nomor_surat,
+                'message' => 'Ada surat Terbaru untuk anda',
+                'url' => plugin_route('e-office.surat-masuk.show', $data->id),
+            ]);
+            WaSender::dispatch([
+                'to' => $pejabat->nohp,
+                'text' => "Surat masuk dari " . $data->surat_dari . ".\nKlik tautan berikut untuk melihat\n" . $notif,
+            ]);
         }
         return redirect(plugin_route('e-office.surat-masuk.index'))->with('success', 'Berhasil dibuat');
     }
@@ -358,26 +379,39 @@ class SuratMasukController extends Controller implements HasMiddleware
         $surat_masuk->update([
             'tanggal_surat' => $request->tanggal_surat,
             'nomor_surat' => $request->nomor_surat,
-            'nomor_agenda' => Arsip::count() + 1,
             'surat_dari' => $request->surat_dari,
             'hal' => $request->hal,
             'sifat' => $request->sifat,
             'tanggal_terima' => $request->tanggal_terima,
         ]);
+
         if ($request->hasFile('file_surat')) {
             $fname = $surat_masuk->addFile([
                 'file' => $request->file('file_surat'),
-                'mime_type' => ['application/pdf'],
+                'mime_type' => [
+                    'application/pdf',
+                    'application/x-pdf',
+                    'application/acrobat',
+                    'applications/vnd.pdf',
+                    'text/pdf',
+                    'text/x-pdf'
+                ],
                 'purpose' => 'file-surat-' . $surat_masuk->id,
                 'random_name' => true
             ]);
-            if(empty($fname)){
-        return back()->with('danger', 'File Surat Gagal diupload');
-
+            if (empty($fname)) {
+                return back()->with('danger', 'File Surat Gagal diupload');
             }
             $surat_masuk->update(['file_surat' => $fname]);
+        } elseif ($request->filled('file_surat') && is_string($request->file_surat)) {
+            $filePath = $request->file_surat;
+            if (!str_starts_with($filePath, '/media/') && !str_starts_with($filePath, 'http')) {
+                $filePath = '/media/' . ltrim($filePath, '/');
+            }
+            $surat_masuk->update(['file_surat' => $filePath]);
         }
-        return back()->with('success', 'Berhasil di perbaharui');
+
+        return back()->with('success', 'Berhasil diperbaharui');
     }
 
     public function index()

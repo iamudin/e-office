@@ -72,13 +72,20 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">File Surat (PDF) @if(!$data) <span class="text-rose-500">*</span> @endif</label>
-                    <input type="file" data-max-size="20000000" name="file_surat" accept="application/pdf" {{ !$data ? 'required' : '' }} class="block w-full text-base text-slate-600 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors  rounded-xl py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
+                    <div class="media-input-wrapper" style="{{ (isset($data) && $data->file_surat && media_exists($data->file_surat)) ? 'display:none;' : '' }}">
+                        <input type="file" data-max-size="50000000" name="file_surat" accept="application/pdf" {{ (!$data || empty($data->file_surat)) ? 'required' : '' }} class="compress-image block w-full text-base text-slate-600 file:mr-4 file:py-3 file:px-5 file:rounded-xl file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors rounded-xl py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
+                    </div>
                     
                     @if(isset($data) && $data->file_surat && media_exists($data->file_surat))
-                        <div class="mt-3">
-                            <a href="{{ $data->file_surat }}" target="_blank" class="inline-flex items-center px-3 py-1.5 border border-rose-200 text-xs font-medium rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors">
-                                <i class="fa fa-file-pdf-o mr-1.5"></i> Lihat Surat Saat Ini
-                            </a>
+                        <div class="media-preview-wrapper mt-3">
+                            <input type="hidden" name="file_surat" value="{{ $data->file_surat }}">
+                            <div class="inline-flex items-center gap-3 px-4 py-2.5 bg-indigo-50/80 border border-indigo-200 rounded-xl text-xs font-semibold text-indigo-800 shadow-xs">
+                                <i class="fa fa-file-pdf-o text-rose-500 text-lg"></i>
+                                <a href="{{ $data->file_surat }}" target="_blank" class="hover:underline font-bold">{{ basename($data->file_surat) }}</a>
+                                <button type="button" class="ml-2 text-rose-500 hover:text-rose-700 btn-remove-media cursor-pointer p-1" title="Hapus / Ganti File" onclick="$(this).closest('.media-preview-wrapper').remove(); $('.media-input-wrapper').show();">
+                                    <i class="fa fa-trash text-sm"></i>
+                                </button>
+                            </div>
                         </div>
                     @endif
                 </div>
