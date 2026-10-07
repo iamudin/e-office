@@ -37,10 +37,13 @@ class LoginController extends Controller implements HasMiddleware
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
+            'captcha' => 'required|string',
         ]);
 
         $field = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-
+        if (!captcha_check($request->captcha)) {
+            return back()->with('error', 'Captcha salah');
+        }
         $user = User::where($field, $request->username)->first();
 
         if ($user && Hash::check($request->password, $user->password)) {

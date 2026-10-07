@@ -71,7 +71,9 @@
                             placeholder="••••••••">
                     </div>
                 </div>
-
+                <div>
+                    {!! captcha_field() !!}
+                </div>
                 <button type="submit"
                     class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-600/30 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-900 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
                     Masuk ke Sistem

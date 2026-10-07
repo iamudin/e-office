@@ -223,12 +223,115 @@
                                         </div>
                                         
                                         <h5 class="font-semibold text-slate-800 mb-3 text-sm">Dengan Hormat harap:</h5>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                                            @foreach(['Tanggapan dan Saran', 'Proses Lebih lanjut', 'Koordinasi / Konfirmasikan'] as $row)
-                                                <label class="flex items-center p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer bg-white">
-                                                    <input type="checkbox" name="harapan[]" value="{{ $row }}" class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
-                                                    <span class="ml-2 text-sm text-slate-700">{{ $row }}</span>
-                                                </label>
+                                        @php
+                                            $selectedHarapan = old('harapan', is_array($data->harapan) ? $data->harapan : []);
+
+                                            $findDynamicMatch = function($prefix) use ($selectedHarapan) {
+                                                foreach ((array) $selectedHarapan as $h) {
+                                                    if (is_string($h) && str_starts_with($h, $prefix)) {
+                                                        $val = trim(substr($h, strlen($prefix)));
+                                                        return [
+                                                            'checked' => true,
+                                                            'custom' => ($val === '[Nama Unit/Jabatan]' || empty($val)) ? '' : $val,
+                                                        ];
+                                                    }
+                                                }
+                                                return ['checked' => false, 'custom' => ''];
+                                            };
+
+                                            $instruksiDisposisi = [
+                                                'Instruksi Tindak Lanjut dan Pelaksanaan' => [
+                                                    ['text' => 'Tindak lanjuti sesuai ketentuan/prosedur'],
+                                                    ['text' => 'Selesaikan segera'],
+                                                    ['text' => 'Pelajari dan laporkan'],
+                                                    ['text' => 'Proses sesuai aturan'],
+                                                ],
+                                                'Instruksi Koordinasi dan Diskusi' => [
+                                                    [
+                                                        'text' => 'Koordinasikan dengan [Nama Unit/Jabatan]',
+                                                        'dynamic' => true,
+                                                        'prefix' => 'Koordinasikan dengan ',
+                                                        'placeholder' => 'Ketik nama unit / jabatan...',
+                                                    ],
+                                                    ['text' => 'Bicarakan dengan saya'],
+                                                    [
+                                                        'text' => 'Minta pertimbangan/saran teknis dari [Nama Unit/Jabatan]',
+                                                        'dynamic' => true,
+                                                        'prefix' => 'Minta pertimbangan/saran teknis dari ',
+                                                        'placeholder' => 'Ketik nama unit / jabatan...',
+                                                    ],
+                                                ],
+                                                'Instruksi Penyiapan Dokumen dan Balasan' => [
+                                                    ['text' => 'Siapkan konsep balasan'],
+                                                    ['text' => 'Siapkan bahan/data'],
+                                                    ['text' => 'Agendakan'],
+                                                ],
+                                                'Instruksi Kehadiran dan Perwakilan' => [
+                                                    ['text' => 'Hadir/Wakili saya'],
+                                                    ['text' => 'Dampingi saya'],
+                                                ],
+                                                'Instruksi Informasi dan Pengarsipan' => [
+                                                    ['text' => 'Untuk diketahui (U.d.k.)'],
+                                                    ['text' => 'File / Arsipkan'],
+                                                ],
+                                            ];
+                                        @endphp
+
+                                        @if(isset($pejabat) && count($pejabat))
+                                            <datalist id="list_jabatan_suggestions">
+                                                @foreach($pejabat as $p)
+                                                    <option value="{{ $p->jabatan }}">{{ $p->nama }}</option>
+                                                @endforeach
+                                            </datalist>
+                                        @endif
+
+                                        <div class="space-y-4 mb-5">
+                                            @foreach($instruksiDisposisi as $kategori => $items)
+                                                <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/70">
+                                                    <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2.5 flex items-center">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2"></span>
+                                                        {{ $kategori }}
+                                                    </h6>
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        @foreach($items as $item)
+                                                            @if(!empty($item['dynamic']))
+                                                                @php
+                                                                    $match = $findDynamicMatch($item['prefix']);
+                                                                    $initialValue = $match['checked'] 
+                                                                        ? ($match['custom'] ? $item['prefix'] . $match['custom'] : $item['prefix'] . '[Nama Unit/Jabatan]')
+                                                                        : $item['prefix'] . '[Nama Unit/Jabatan]';
+                                                                @endphp
+                                                                <div class="sm:col-span-2 p-2.5 border border-slate-200 rounded-lg bg-white transition-all shadow-sm dynamic-harapan-card" data-prefix="{{ $item['prefix'] }}">
+                                                                    <label class="flex items-start cursor-pointer select-none">
+                                                                        <input type="checkbox" 
+                                                                               name="harapan[]" 
+                                                                               value="{{ $initialValue }}" 
+                                                                               {{ $match['checked'] ? 'checked' : '' }} 
+                                                                               class="mt-0.5 w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 shrink-0 dynamic-harapan-checkbox">
+                                                                        <span class="ml-2.5 text-xs sm:text-sm text-slate-700 leading-snug">
+                                                                            {{ $item['prefix'] }}<span class="font-semibold text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100">[Nama Unit/Jabatan]</span>
+                                                                        </span>
+                                                                    </label>
+                                                                    <div class="mt-2.5 pl-6 dynamic-harapan-input-wrapper {{ $match['checked'] ? '' : 'hidden' }}">
+                                                                        <div class="relative">
+                                                                            <input type="text" 
+                                                                                   value="{{ $match['custom'] }}" 
+                                                                                   placeholder="{{ $item['placeholder'] }}" 
+                                                                                   list="list_jabatan_suggestions"
+                                                                                   class="w-full text-xs sm:text-sm px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 focus:bg-white transition-colors dynamic-harapan-text">
+                                                                        </div>
+                                                                        <p class="text-[11px] text-slate-400 mt-1">Ketik manual nama unit / jabatan yang dituju.</p>
+                                                                    </div>
+                                                                </div>
+                                                            @else
+                                                                <label class="flex items-start p-2.5 border border-slate-200 rounded-lg hover:bg-white hover:border-indigo-300 cursor-pointer bg-white transition-all shadow-sm">
+                                                                    <input type="checkbox" name="harapan[]" value="{{ $item['text'] }}" {{ in_array($item['text'], (array) $selectedHarapan) ? 'checked' : '' }} class="mt-0.5 w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 shrink-0">
+                                                                    <span class="ml-2.5 text-xs sm:text-sm text-slate-700 leading-snug">{{ $item['text'] }}</span>
+                                                                </label>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                </div>
                                             @endforeach
                                         </div>
                                         
@@ -339,3 +442,62 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.dynamic-harapan-card').forEach(function (card) {
+            const checkbox = card.querySelector('.dynamic-harapan-checkbox');
+            const wrapper = card.querySelector('.dynamic-harapan-input-wrapper');
+            const input = card.querySelector('.dynamic-harapan-text');
+            const prefix = card.getAttribute('data-prefix');
+
+            function syncValue() {
+                const customVal = input.value.trim();
+                checkbox.value = prefix + (customVal || '[Nama Unit/Jabatan]');
+            }
+
+            checkbox.addEventListener('change', function () {
+                if (checkbox.checked) {
+                    wrapper.classList.remove('hidden');
+                    input.focus();
+                } else {
+                    wrapper.classList.add('hidden');
+                }
+                syncValue();
+            });
+
+            input.addEventListener('input', function () {
+                if (!checkbox.checked) {
+                    checkbox.checked = true;
+                    wrapper.classList.remove('hidden');
+                }
+                syncValue();
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    syncValue();
+                    input.blur();
+                }
+            });
+        });
+
+        const form = document.querySelector('form[action*="disposisi"]');
+        if (form) {
+            form.addEventListener('submit', function () {
+                document.querySelectorAll('.dynamic-harapan-card').forEach(function (card) {
+                    const checkbox = card.querySelector('.dynamic-harapan-checkbox');
+                    const input = card.querySelector('.dynamic-harapan-text');
+                    const prefix = card.getAttribute('data-prefix');
+                    if (checkbox && input && prefix) {
+                        const customVal = input.value.trim();
+                        checkbox.value = prefix + (customVal || '[Nama Unit/Jabatan]');
+                    }
+                });
+            });
+        }
+    });
+</script>
+@endpush

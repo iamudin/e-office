@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('file_surat')->nullable();
             $table->string('file_arsip')->nullable();
             $table->string('hal')->nullable();
-            $table->string('harapan')->nullable();
+            $table->text('harapan')->nullable();
             $table->string('catatan')->nullable();
             $table->dateTime('paraf_kasubagumum_pada')->nullable();
             $table->dateTime('diteruskan_ke_kadis')->nullable();

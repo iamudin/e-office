@@ -42,7 +42,7 @@
             <br>
             No. Agenda : {{ $data->nomor_agenda }}<br>
             Sifat : <br>
-            @foreach(['Segera', 'Sangat Segera', 'Rahasia'] as $sifat)
+            @foreach(['Segera', 'Sangat Segera', 'Rahasia','Biasa'] as $sifat)
             @if(str($sifat)->upper() == $data->sifat)
             <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
             @else 
@@ -91,18 +91,17 @@
                 @endforeach
             </ul>
         </td>
-        <td style="padding:0 0 10px 5px">
+        <td style="padding:0 0 10px 5px;vertical-align: top">
             Dengan hormat harap :
             <ul class="checklist" style="margin:0;padding:0 0 0 10px;list-style:none">
-                @foreach(['Tanggapan dan Saran', 'Proses Lebih lanjut', 'Koordinasi / Konfirmasikan'] as $row)
-                    <li>
-                        @if($data->harapan && in_array($row, $data->harapan))
-                        <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
-                        @else 
-                        <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;color:#fff">✔</span>
-                        @endif
-                        {{ $row }} </li>
-                @endforeach
+                @forelse((array)($data->harapan ?? []) as $row)
+                <li>
+                    <span style="border:1px solid #000;  font-family: DejaVu Sans, sans-serif;">✔</span>
+                    {{ $row }}
+                </li>
+                @empty
+                <li style="color: #888; font-style: italic;">-</li>
+                @endforelse
             </ul>
         </td>
     </tr>
@@ -118,7 +117,7 @@
       
         </td>
         <td style="vertical-align: bottom;border-left:none !important">
-            <div class="ttd" style="margin-top:150px;padding:20px;font-size:16px;">
+            <div class="ttd" style="margin-top:100px;padding:20px;font-size:16px;">
                 KEPALA {{ str(get_option('nama_organisasi'))->upper() }}<br>KABUPATEN {{ str(get_option('kabupaten'))->upper() }}<br>
                 <br>
                 <br>
