@@ -54,11 +54,11 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-                    { data: 'nama', name: 'nama' },
-                    { data: 'jabatan', name: 'jabatan' },
-                    { data: 'alias', name: 'alias_jabatan' },
-                    { data: 'nohp', name: 'nohp' },
-                    { data: 'status', name: 'user.status' },
+                    { data: 'nama', name: 'nama', searchable: true },
+                    { data: 'jabatan', name: 'jabatan', searchable: true },
+                    { data: 'alias', name: 'alias_jabatan', searchable: true },
+                    { data: 'nohp', name: 'nohp', searchable: true },
+                    { data: 'status', name: 'user.status', orderable: false, searchable: false },
                     { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
                 ],
                 language: {

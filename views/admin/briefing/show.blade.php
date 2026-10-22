@@ -23,7 +23,7 @@
                 </p>
             </div>
             
-            @if($isKadis && $briefing->status !== 'completed')
+            @if(($isKadis || $isPembuat) && $briefing->status !== 'completed')
             <div>
                 <form action="{{ plugin_route('e-office.briefing.close', $briefing->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menutup/menyelesaikan tugas ini?')">
                     @csrf
@@ -35,136 +35,222 @@
             @endif
         </div>
         
-        @php
-            $isTingkatPertama = false;
-            if (!$isKadis && isset($myDisposisi)) {
-                // Pejabat ID milik user pembuat briefing
-                $kadisPejabatId = $briefing->user->pejabat?->id;
-                if ($myDisposisi->pengirim_id == $kadisPejabatId) {
-                    $isTingkatPertama = true;
-                }
-            }
-        @endphp
-        
-        @if($isKadis || $isTingkatPertama)
-            <div class="p-6 text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{{ $briefing->pesan }}</div>
-        @else
-            <div class="p-6 text-gray-400 italic text-sm">Pesan/Instruksi massal dari Pimpinan hanya ditujukan untuk bawahan tingkat pertama. Anda hanya menerima instruksi khusus dari atasan langsung Anda.</div>
+        @if($briefing->pesan)
+            <div class="p-6 text-gray-700 whitespace-pre-wrap text-sm leading-relaxed border-t border-gray-100">{{ $briefing->pesan }}</div>
         @endif
         
         @if(!$isKadis && isset($myDisposisi))
-            @if($myDisposisi->pesan_diteruskan)
-            <div class="px-6 py-4 bg-amber-50/50 border-t border-amber-100/60">
-                <h4 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2"><i class="fa fa-bullhorn mr-1"></i> Instruksi Khusus {{ $myDisposisi->pengirim->nama ?? 'Atasan' }}</h4>
-                <div class="text-amber-900 whitespace-pre-wrap text-sm leading-relaxed">{{ $myDisposisi->pesan_diteruskan }}</div>
+            @if($myDisposisi->pesan_diteruskan || $myDisposisi->pesan_khusus)
+            <div class="px-6 py-4 bg-indigo-50/50 border-t border-indigo-100/60">
+                <h4 class="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1.5"><i class="fa fa-commenting mr-1"></i> Catatan & Arahan Khusus untuk Anda</h4>
+                <div class="text-indigo-950 whitespace-pre-wrap text-sm leading-relaxed">{{ $myDisposisi->pesan_diteruskan ?: $myDisposisi->pesan_khusus }}</div>
             </div>
             @endif
-            
-            @if($myDisposisi->pesan_khusus)
-            <div class="px-6 py-4 bg-blue-50/50 border-t border-blue-100/60">
-                <h4 class="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2"><i class="fa fa-commenting mr-1"></i> Pesan Khusus Untuk Anda</h4>
-                <div class="text-blue-900 whitespace-pre-wrap text-sm leading-relaxed">{{ $myDisposisi->pesan_khusus }}</div>
-            </div>
-            @endif
-        @endif
-        
-        {{-- File Utama dari Pimpinan --}}
-        @if(($isKadis || $isTingkatPertama) && $briefing->file_lampiran)
+
+            @if($myDisposisi->file_lampiran)
             <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-                        <i class="fa fa-file-pdf-o"></i>
+                        <i class="fa fa-paperclip"></i>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-gray-900">Lampiran Utama Pimpinan</p>
-                        <p class="text-xs text-gray-500">File tersedia</p>
+                        <p class="text-sm font-medium text-gray-900">Lampiran Tugas untuk Anda</p>
+                        <p class="text-xs text-gray-500">File lampiran dari atasan</p>
                     </div>
                 </div>
-                <a href="{{ $briefing->file_lampiran }}" target="_blank" class="px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                <a href="{{ $myDisposisi->file_lampiran }}" target="_blank" class="px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
                     Unduh / Lihat File
                 </a>
             </div>
-        @endif
-
-        {{-- File Tambahan dari Atasan Langsung --}}
-        @if(!$isKadis && isset($myDisposisi) && $myDisposisi->file_lampiran && $myDisposisi->file_lampiran !== $briefing->file_lampiran)
-            <div class="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                        <i class="fa fa-file-text-o"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-900">Lampiran Khusus dari Atasan</p>
-                        <p class="text-xs text-gray-500">File tambahan</p>
-                    </div>
-                </div>
-                <a href="{{ $myDisposisi->file_lampiran }}" target="_blank" class="px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-                    Unduh / Lihat File Khusus
-                </a>
-            </div>
+            @endif
         @endif
     </div>
 
-    {{-- Checklist Progress --}}
+    {{-- Checklist Progress & Konfirmasi Instruksi --}}
     @if($briefing->checklists->count() > 0)
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Ceklis Kegiatan</h3>
-        
-        @if(!$isKadis && $myDisposisi && $briefing->status !== 'completed')
-        <form action="{{ plugin_route('e-office.briefing.balas', $briefing->id) }}" method="POST" id="checklistForm">
-            @csrf
-            <div class="space-y-3">
-                @foreach($briefing->checklists->filter(fn($c) => is_null($c->penerima_id) || $c->penerima_id == $pejabat?->id) as $chk)
-                <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 {{ $chk->is_checked ? 'bg-emerald-50/30' : 'bg-gray-50/50 cursor-pointer hover:border-indigo-200' }}">
-                    <input type="checkbox" name="checklists[{{ $chk->id }}]" value="1" {{ $chk->is_checked ? 'checked disabled' : '' }} class="mt-0.5 text-indigo-600 rounded focus:ring-indigo-500 w-4 h-4 border-gray-300">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium {{ $chk->is_checked ? 'text-gray-500 line-through' : 'text-gray-800' }}">{{ $chk->kegiatan }}</p>
-                        @if($chk->is_checked)
-                            <p class="text-xs text-emerald-600 mt-1"><i class="fa fa-check mr-1"></i>Diselesaikan oleh {{ $chk->checkedByPejabat->nama ?? 'Seseorang' }} pada {{ $chk->checked_at->format('d M, H:i') }}</p>
-                        @endif
-                    </div>
-                </label>
-                @endforeach
+    @php
+        $allChks = $briefing->checklists;
+        $totalAll = $allChks->count();
+        $selesaiAll = $allChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+        $prosesAll = $allChks->where('status', 'proses')->count();
+        $pendingAll = $totalAll - $selesaiAll - $prosesAll;
+        $percentAll = $totalAll > 0 ? round(($selesaiAll / $totalAll) * 100) : 0;
+    @endphp
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden p-6 sm:p-8" id="checklistSection">
+        {{-- Section Header & Global Progress Bar --}}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa fa-tasks text-indigo-600"></i> Ceklis & Realisasi Instruksi Tugas
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Penerima briefing dapat mengonfirmasi status pengerjaan setiap poin instruksi secara mandiri sebagai <strong class="text-amber-600">"Proses"</strong> atau <strong class="text-emerald-600">"Selesai"</strong>.
+                </p>
             </div>
-            <button type="submit" class="mt-4 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-600/20">
-                Update Ceklis
-            </button>
-        </form>
-        @else
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <i class="fa fa-check-circle"></i> <span id="stat-selesai">{{ $selesaiAll }}</span> Selesai
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    <i class="fa fa-spinner"></i> <span id="stat-proses">{{ $prosesAll }}</span> Proses
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <span id="stat-pending">{{ $pendingAll }}</span> Menunggu
+                </span>
+            </div>
+        </div>
+
+        {{-- Progress Bar --}}
+        <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+                <span>Tingkat Ketercapaian Seluruh Instruksi</span>
+                <span class="text-indigo-600 text-sm" id="stat-percent">{{ $percentAll }}%</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
+                <div id="progressbar-selesai" class="bg-emerald-500 h-3 transition-all duration-300" style="width: {{ $percentAll }}%" title="Selesai"></div>
+                <div id="progressbar-proses" class="bg-amber-400 h-3 transition-all duration-300" style="width: {{ $totalAll > 0 ? round(($prosesAll / $totalAll) * 100) : 0 }}%" title="Proses"></div>
+            </div>
+        </div>
+
+        {{-- List Checklist --}}
+        @php
+            $grouped = $briefing->checklists->groupBy('penerima_id');
+        @endphp
+
         <div class="space-y-6">
-            @php 
-                $checklistsToView = $isKadis ? $briefing->checklists : $briefing->checklists->filter(fn($c) => is_null($c->penerima_id) || $c->penerima_id == $pejabat?->id); 
-                $grouped = $checklistsToView->groupBy('penerima_id');
-            @endphp
-            
             @foreach($grouped as $penerimaId => $chks)
-                <div class="mb-4">
-                    @if($penerimaId == '')
-                        <h4 class="text-sm font-bold text-gray-700 mb-2 border-b border-gray-100 pb-1"><i class="fa fa-globe mr-1 text-gray-400"></i> Tugas Massal (Untuk Semua)</h4>
-                    @else
-                        <h4 class="text-sm font-bold text-indigo-700 mb-2 border-b border-indigo-100 pb-1">
-                            <i class="fa fa-user mr-1 text-indigo-400"></i> Tugas Khusus: {{ $chks->first()->penerima->nama ?? 'Bawahan' }}
-                        </h4>
-                    @endif
-                    <div class="space-y-3">
-                        @foreach($chks as $chk)
-                        <div class="flex items-start gap-3 p-3 rounded-xl border border-gray-100 {{ $chk->is_checked ? 'bg-emerald-50/30' : 'bg-gray-50/50' }}">
-                            <div class="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center {{ $chk->is_checked ? 'bg-emerald-500 text-white' : 'border border-gray-300' }}">
-                                @if($chk->is_checked)<i class="fa fa-check text-[10px]"></i>@endif
+                @php
+                    $isMyGroup = (is_null($penerimaId) || $penerimaId == $pejabat?->id);
+                    $penerimaPejabat = $chks->first()->penerima;
+                @endphp
+
+                <div class="rounded-2xl border {{ $isMyGroup ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200/80 bg-slate-50/30' }} p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b {{ $isMyGroup ? 'border-indigo-100' : 'border-slate-100' }}">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold">
+                                {{ strtoupper(substr($penerimaPejabat?->nama ?? 'B', 0, 1)) }}
                             </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium {{ $chk->is_checked ? 'text-gray-500 line-through' : 'text-gray-800' }}">{{ $chk->kegiatan }}</p>
-                                @if($chk->is_checked)
-                                    <p class="text-xs text-emerald-600 mt-1"><i class="fa fa-check mr-1"></i>Diselesaikan oleh {{ $chk->checkedByPejabat->nama ?? 'Seseorang' }} pada {{ $chk->checked_at->format('d M, H:i') }}</p>
-                                @endif
+                            <div>
+                                <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+                                    {{ $penerimaPejabat?->nama ?? 'Bawahan' }}
+                                    @if($penerimaId == $pejabat?->id)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">Tugas Anda</span>
+                                    @endif
+                                </h4>
+                                <p class="text-[11px] text-slate-500">{{ $penerimaPejabat?->jabatan ?: ($penerimaPejabat?->alias_jabatan ?: 'Staf') }}</p>
                             </div>
                         </div>
+                    </div>
+
+                    {{-- Items per person --}}
+                    <div class="space-y-3">
+                        @foreach($chks as $chk)
+                            @php
+                                $chkStatus = $chk->status ?: ($chk->is_checked ? 'selesai' : 'pending');
+                                $canEditThis = ($briefing->status !== 'completed' && ($isKadis || $isPembuat || $isMyGroup));
+                            @endphp
+
+                            <div id="chk-row-{{ $chk->id }}" 
+                                class="bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs {{ $chkStatus === 'selesai' ? 'border-emerald-200 bg-emerald-50/10' : ($chkStatus === 'proses' ? 'border-amber-200 bg-amber-50/10' : 'border-slate-200') }}">
+                                
+                                {{-- Item Details --}}
+                                <div class="flex items-start gap-3 flex-1">
+                                    <div id="chk-icon-{{ $chk->id }}" class="mt-0.5 flex-shrink-0">
+                                        @if($chkStatus === 'selesai')
+                                            <div class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                                                <i class="fa fa-check"></i>
+                                            </div>
+                                        @elseif($chkStatus === 'proses')
+                                            <div class="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm font-bold shadow-xs animate-pulse">
+                                                <i class="fa fa-spinner fa-spin"></i>
+                                            </div>
+                                        @else
+                                            <div class="w-7 h-7 rounded-xl bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center text-sm">
+                                                <i class="fa fa-circle-o"></i>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1">
+                                        <p id="chk-text-{{ $chk->id }}" class="text-sm font-semibold {{ $chkStatus === 'selesai' ? 'text-slate-500 line-through' : ($chkStatus === 'proses' ? 'text-amber-950 font-bold' : 'text-slate-900') }}">
+                                            {{ $chk->kegiatan }}
+                                        </p>
+                                        <div id="chk-meta-{{ $chk->id }}" class="text-xs mt-1">
+                                            @if($chkStatus === 'selesai')
+                                                <span class="text-emerald-700 font-medium">
+                                                    <i class="fa fa-check-circle mr-1"></i>Selesai oleh <strong>{{ $chk->checkedByPejabat?->nama ?? 'Penerima' }}</strong>
+                                                    @if($chk->checked_at)
+                                                        &bull; {{ $chk->checked_at->translatedFormat('d M Y, H:i') }}
+                                                    @endif
+                                                </span>
+                                            @elseif($chkStatus === 'proses')
+                                                <span class="text-amber-700 font-medium">
+                                                    <i class="fa fa-clock-o mr-1"></i>Sedang dikerjakan / diproses oleh <strong>{{ $chk->checkedByPejabat?->nama ?? 'Penerima' }}</strong>
+                                                    @if($chk->checked_at)
+                                                        &bull; sejak {{ $chk->checked_at->translatedFormat('d M, H:i') }}
+                                                    @endif
+                                                </span>
+                                            @else
+                                                <span class="text-slate-400 italic">Belum dikonfirmasi / menunggu pengerjaan</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Action / Status Buttons --}}
+                                <div class="flex-shrink-0 flex items-center gap-2 self-end md:self-center">
+                                    @if($canEditThis)
+                                        <div class="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 gap-1 text-xs font-bold">
+                                            {{-- Tombol Pending / Reset --}}
+                                            <button type="button" 
+                                                onclick="konfirmasiChecklist('{{ $chk->id }}', 'pending', this)"
+                                                id="btn-status-pending-{{ $chk->id }}"
+                                                class="px-2.5 py-1.5 rounded-lg transition {{ $chkStatus === 'pending' ? 'bg-white text-slate-800 shadow-xs border border-slate-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60' }}"
+                                                title="Tandai Belum Dikerjakan">
+                                                Menunggu
+                                            </button>
+
+                                            {{-- Tombol Proses --}}
+                                            <button type="button" 
+                                                onclick="konfirmasiChecklist('{{ $chk->id }}', 'proses', this)"
+                                                id="btn-status-proses-{{ $chk->id }}"
+                                                class="px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 {{ $chkStatus === 'proses' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-800 hover:bg-amber-100' }}"
+                                                title="Tandai Sedang Dikerjakan (Proses)">
+                                                <i class="fa fa-spinner {{ $chkStatus === 'proses' ? 'fa-spin' : '' }}"></i> Proses
+                                            </button>
+
+                                            {{-- Tombol Selesai --}}
+                                            <button type="button" 
+                                                onclick="konfirmasiChecklist('{{ $chk->id }}', 'selesai', this)"
+                                                id="btn-status-selesai-{{ $chk->id }}"
+                                                class="px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 {{ $chkStatus === 'selesai' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800 hover:bg-emerald-100' }}"
+                                                title="Tandai Selesai">
+                                                <i class="fa fa-check"></i> Selesai
+                                            </button>
+                                        </div>
+                                    @else
+                                        {{-- Readonly Badge jika bukan penerima / briefing ditutup --}}
+                                        @if($chkStatus === 'selesai')
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white">
+                                                <i class="fa fa-check-circle"></i> Selesai
+                                            </span>
+                                        @elseif($chkStatus === 'proses')
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white">
+                                                <i class="fa fa-spinner fa-spin"></i> Proses
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                <i class="fa fa-clock-o"></i> Menunggu
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
+                            </div>
                         @endforeach
                     </div>
                 </div>
             @endforeach
         </div>
-        @endif
     </div>
     @endif
 
@@ -464,11 +550,6 @@
                         @csrf
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Instruksi Tambahan Massal (Opsional)</label>
-                            <textarea name="pesan_diteruskan" rows="3" class="w-full rounded-xl border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm py-2 px-3 border resize-none" placeholder="Instruksi ini akan diteruskan ke semua bawahan yang dipilih..."></textarea>
-                        </div>
-                        
-                        <div class="pt-2 border-t border-gray-100">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-sm font-bold text-gray-900"><i class="fa fa-users text-indigo-500 mr-2"></i> Delegasi Spesifik Bawahan</h4>
                                 <label class="flex items-center gap-1.5 text-xs text-indigo-600 font-medium cursor-pointer hover:text-indigo-800">
@@ -545,7 +626,155 @@
     </div>
 </div>
 
+{{-- Toast Notification Container --}}
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
 @push('scripts')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg text-xs font-bold transition-all duration-300 transform translate-y-4 opacity-0 ${
+            type === 'success' ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 
+            (type === 'warning' ? 'bg-amber-500 text-white shadow-amber-500/30' : 'bg-slate-800 text-white shadow-slate-900/30')
+        }`;
+        
+        const icon = type === 'success' ? '<i class="fa fa-check-circle"></i>' : (type === 'warning' ? '<i class="fa fa-spinner fa-spin"></i>' : '<i class="fa fa-info-circle"></i>');
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+        container.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+            toast.classList.remove('translate-y-4', 'opacity-0');
+        }, 10);
+
+        // Auto remove
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    async function konfirmasiChecklist(id, status, btnElement) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const updateUrl = "{{ plugin_route('e-office.briefing.checklist.update', 'REPLACE_ID') }}".replace('REPLACE_ID', id);
+
+        // Disable all buttons in this group temporarily
+        const parentGroup = btnElement.closest('.inline-flex');
+        const allBtns = parentGroup ? parentGroup.querySelectorAll('button') : [];
+        allBtns.forEach(b => b.disabled = true);
+
+        try {
+            const response = await fetch(updateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // 1. Update Buttons State
+                const btnPending = document.getElementById(`btn-status-pending-${id}`);
+                const btnProses = document.getElementById(`btn-status-proses-${id}`);
+                const btnSelesai = document.getElementById(`btn-status-selesai-${id}`);
+
+                if (btnPending) {
+                    btnPending.className = status === 'pending'
+                        ? 'px-2.5 py-1.5 rounded-lg transition bg-white text-slate-800 shadow-xs border border-slate-200'
+                        : 'px-2.5 py-1.5 rounded-lg transition text-slate-500 hover:text-slate-900 hover:bg-slate-200/60';
+                }
+                if (btnProses) {
+                    btnProses.className = status === 'proses'
+                        ? 'px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 bg-amber-500 text-white shadow-xs'
+                        : 'px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 text-amber-800 hover:bg-amber-100';
+                    const iconP = btnProses.querySelector('i');
+                    if (iconP) iconP.className = `fa fa-spinner ${status === 'proses' ? 'fa-spin' : ''}`;
+                }
+                if (btnSelesai) {
+                    btnSelesai.className = status === 'selesai'
+                        ? 'px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 bg-emerald-600 text-white shadow-xs'
+                        : 'px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 text-emerald-800 hover:bg-emerald-100';
+                }
+
+                // 2. Update Row Visual
+                const row = document.getElementById(`chk-row-${id}`);
+                const icon = document.getElementById(`chk-icon-${id}`);
+                const text = document.getElementById(`chk-text-${id}`);
+                const meta = document.getElementById(`chk-meta-${id}`);
+
+                if (row) {
+                    row.className = `bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs ${
+                        status === 'selesai' ? 'border-emerald-200 bg-emerald-50/10' : 
+                        (status === 'proses' ? 'border-amber-200 bg-amber-50/10' : 'border-slate-200')
+                    }`;
+                }
+
+                if (icon) {
+                    if (status === 'selesai') {
+                        icon.innerHTML = `<div class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shadow-xs"><i class="fa fa-check"></i></div>`;
+                    } else if (status === 'proses') {
+                        icon.innerHTML = `<div class="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm font-bold shadow-xs animate-pulse"><i class="fa fa-spinner fa-spin"></i></div>`;
+                    } else {
+                        icon.innerHTML = `<div class="w-7 h-7 rounded-xl bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center text-sm"><i class="fa fa-circle-o"></i></div>`;
+                    }
+                }
+
+                if (text) {
+                    text.className = `text-sm font-semibold ${
+                        status === 'selesai' ? 'text-slate-500 line-through' : 
+                        (status === 'proses' ? 'text-amber-950 font-bold' : 'text-slate-900')
+                    }`;
+                }
+
+                if (meta) {
+                    if (status === 'selesai') {
+                        meta.innerHTML = `<span class="text-emerald-700 font-medium"><i class="fa fa-check-circle mr-1"></i>Selesai oleh <strong>${data.checked_by || 'Anda'}</strong> &bull; ${data.checked_at || 'Baru saja'}</span>`;
+                    } else if (status === 'proses') {
+                        meta.innerHTML = `<span class="text-amber-700 font-medium"><i class="fa fa-clock-o mr-1"></i>Sedang diproses oleh <strong>${data.checked_by || 'Anda'}</strong> &bull; sejak ${data.checked_at || 'Baru saja'}</span>`;
+                    } else {
+                        meta.innerHTML = `<span class="text-slate-400 italic">Belum dikonfirmasi / menunggu pengerjaan</span>`;
+                    }
+                }
+
+                // 3. Update Global Counters & Progress Bar
+                if (data.stats) {
+                    const elSelesai = document.getElementById('stat-selesai');
+                    const elProses = document.getElementById('stat-proses');
+                    const elPending = document.getElementById('stat-pending');
+                    const elPercent = document.getElementById('stat-percent');
+                    const barSelesai = document.getElementById('progressbar-selesai');
+                    const barProses = document.getElementById('progressbar-proses');
+
+                    if (elSelesai) elSelesai.textContent = data.stats.selesai;
+                    if (elProses) elProses.textContent = data.stats.proses;
+                    if (elPending) elPending.textContent = data.stats.pending;
+                    if (elPercent) elPercent.textContent = `${data.stats.percent}%`;
+                    if (barSelesai) barSelesai.style.width = `${data.stats.percent}%`;
+                    if (barProses && data.stats.total > 0) {
+                        const prosesPercent = Math.round((data.stats.proses / data.stats.total) * 100);
+                        barProses.style.width = `${prosesPercent}%`;
+                    }
+                }
+
+                showToast(data.message || 'Status berhasil diperbarui.', status === 'selesai' ? 'success' : (status === 'proses' ? 'warning' : 'info'));
+            } else {
+                alert('Gagal memperbarui status: ' + (data.message || 'Terjadi kesalahan'));
+            }
+        } catch (err) {
+            console.error('Error checklist update:', err);
+            alert('Terjadi kesalahan jaringan saat memperbarui checklist.');
+        } finally {
+            allBtns.forEach(b => b.disabled = false);
+        }
+    }
+</script>
 @endpush
 @endsection

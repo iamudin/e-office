@@ -170,7 +170,9 @@
                 if (e_office_user() && e_office_user()->canViewSuratMasuk()) {
                     $sidebarMenus[] = ['name' => 'Arsip Surat', 'route' => 'e-office.surat-masuk.index', 'icon' => 'fa-envelope', 'match' => 'surat-masuk'];
                 }
-                $sidebarMenus[] = ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'];
+                if (e_briefing_enabled()) {
+                    $sidebarMenus[] = ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'];
+                }
 
                 if (e_office_user() && e_office_user()->isAdmin()) {
                     $sidebarMenus[] = ['name' => 'Akses User', 'route' => 'e-office.pejabat.index', 'icon' => 'fa-users', 'match' => 'pejabat'];
@@ -299,7 +301,7 @@
                     <span class="text-sm">{{ session('danger') ?? session('warning') ?? session('error') }}</span>
                 </div>
             @endif
-            @if($errors->any())
+            @if(isset($errors) && $errors->any())
                 <div
                     class="mb-5 p-4 rounded-xl bg-rose-50 border border-rose-200/60 text-rose-700 animate-[fadeIn_0.3s_ease]">
                     <div class="flex items-center gap-3 mb-2">

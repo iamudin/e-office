@@ -177,8 +177,10 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div id="editPejabatModalBody">
-                <div class="p-5 text-center text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat form...</div>
+            <div id="editPejabatModalBody" class="d-flex flex-column flex-grow-1" style="min-height: 0; overflow: hidden;">
+                <div class="modal-body text-center p-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat form...
+                </div>
             </div>
         </div>
     </div>
@@ -280,7 +282,7 @@ $(document).ready(function() {
 });
 
 function editPejabat(id) {
-    $('#editPejabatModalBody').html('<div class="p-5 text-center text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat form...</div>');
+    $('#editPejabatModalBody').html('<div class="modal-body text-center p-5 text-muted"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat form...</div>');
     $('#editPejabatModal').modal('show');
     
     var url = '{{ route("e-office.pejabat.edit", ["pejabat" => ":id"]) }}'.replace(':id', id);
@@ -292,7 +294,7 @@ function editPejabat(id) {
             $('#editPejabatModalBody').html(res);
         },
         error: function() {
-            $('#editPejabatModalBody').html('<div class="p-5 text-center text-danger">Gagal memuat form. Silakan coba lagi.</div>');
+            $('#editPejabatModalBody').html('<div class="modal-body text-center p-5 text-danger"><i class="fa fa-exclamation-triangle fa-2x text-danger mb-2"></i><br>Gagal memuat form. Silakan coba lagi.</div>');
         }
     });
 }

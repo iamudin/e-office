@@ -13,15 +13,38 @@ class PejabatController extends Controller
     public function update(Request $request,Pejabat $pejabat)
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
+        
+        $messages = [
+            'nama.required' => 'Nama lengkap wajib diisi.',
+            'nama.unique' => 'Nama sudah digunakan oleh pejabat lain.',
+            'nip.regex' => 'NIP hanya boleh berisi angka dan spasi.',
+            'nip.unique' => 'NIP sudah digunakan oleh pejabat lain.',
+            'nohp.required' => 'Nomor HP (WhatsApp) wajib diisi.',
+            'nohp.numeric' => 'Nomor HP harus berupa angka.',
+            'nohp.regex' => 'Nomor HP harus diawali dengan 08 atau 628.',
+            'nohp.unique' => 'Nomor HP sudah digunakan oleh pejabat lain.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah digunakan oleh akun lain.',
+            'username.required' => 'Username login wajib diisi.',
+            'username.min' => 'Username minimal 4 karakter.',
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, dan garis bawah (_).',
+            'username.unique' => 'Username sudah digunakan oleh akun lain.',
+            'password.min' => 'Password minimal 6 karakter.',
+            'password.regex' => 'Password tidak boleh mengandung spasi.',
+            'jabatan.required' => 'Nama jabatan tertulis wajib diisi.',
+        ];
+
         $request->validate([
             'nip'=>['nullable','regex:/^[0-9 ]+$/','unique:pejabats,nip,'.$pejabat->id],
             'nohp'=>['required', 'numeric', 'regex:/^(08|628)[0-9]*$/', 'unique:pejabats,nohp,'.$pejabat->id],
             'nama'=>'required|unique:pejabats,nama,'.$pejabat->id,
-            'email'=>'required|unique:users,email,'.$pejabat->user->id,
+            'email'=>'required|email|unique:users,email,'.$pejabat->user->id,
             'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username,'.$pejabat->user->id],
             'password'=>['nullable', 'min:6', 'regex:/^\S+$/'],
             'jabatan'=>'required',
-        ]);
+        ], $messages);
+
         $pejabat->update(array_merge($request->all(),['penerima_disposisi'=>$request->penerima_disposisi ?? 0]));
         $pejabat->user()->update([
             'username'=>$request->username,
@@ -31,6 +54,11 @@ class PejabatController extends Controller
             'status'=> $request->status,
             'slug'=> str($request->nama)->slug(),
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Berhasil diperbarui']);
+        }
+
         return back()->with('success','Berhasil di perbarui');
     }
     public function edit(Pejabat $pejabat)
@@ -52,15 +80,39 @@ class PejabatController extends Controller
     public function store(Request $request)
     {
         if (!auth()->user() || !auth()->user()->isAdmin()) abort(403, 'Akses ditolak');
+
+        $messages = [
+            'nama.required' => 'Nama lengkap wajib diisi.',
+            'nama.unique' => 'Nama sudah digunakan oleh pejabat lain.',
+            'nip.regex' => 'NIP hanya boleh berisi angka dan spasi.',
+            'nip.unique' => 'NIP sudah digunakan oleh pejabat lain.',
+            'nohp.required' => 'Nomor HP (WhatsApp) wajib diisi.',
+            'nohp.numeric' => 'Nomor HP harus berupa angka.',
+            'nohp.regex' => 'Nomor HP harus diawali dengan 08 atau 628.',
+            'nohp.unique' => 'Nomor HP sudah digunakan oleh pejabat lain.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah digunakan oleh akun lain.',
+            'username.required' => 'Username login wajib diisi.',
+            'username.min' => 'Username minimal 4 karakter.',
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, dan garis bawah (_).',
+            'username.unique' => 'Username sudah digunakan oleh akun lain.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal 6 karakter.',
+            'password.regex' => 'Password tidak boleh mengandung spasi.',
+            'jabatan.required' => 'Nama jabatan tertulis wajib diisi.',
+        ];
+
         $request->validate([
-            'nip'=>'nullable|numeric|unique:pejabats,nip',
+            'nip'=>['nullable','regex:/^[0-9 ]+$/','unique:pejabats,nip'],
             'nohp'=>['required', 'numeric', 'regex:/^(08|628)[0-9]*$/', 'unique:pejabats,nohp'],
             'nama'=>'required|unique:pejabats,nama',
-            'email'=>'required|unique:users,email',
+            'email'=>'required|email|unique:users,email',
             'username'=>['required', 'min:4', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username'],
             'password'=>['required', 'min:6', 'regex:/^\S+$/'],
             'jabatan'=>'required',
-        ]);
+        ], $messages);
+
         $user = User::create([
             'username'=>$request->username,
             'password'=>bcrypt($request->password),
@@ -71,7 +123,12 @@ class PejabatController extends Controller
             'slug'=> str($request->nama)->slug(),
         ]);
         $create = $user->pejabat()->create(array_merge($request->all(),['penerima_disposisi'=>$request->penerima_disposisi ?? 0]));
-        return redirect(route('e-office.pejabat.edit',$create->id))->with('success','Berhasil ditambah');;
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Berhasil ditambah', 'id' => $create->id]);
+        }
+
+        return redirect(route('e-office.pejabat.edit',$create->id))->with('success','Berhasil ditambah');
     }
     public function create()
     {
@@ -95,7 +152,27 @@ class PejabatController extends Controller
         $data = Pejabat::withWhereHas('user');
         return DataTables::of($data)
             ->addIndexColumn()
-            ->filter(function ($instance) use ($request) {})
+            ->filterColumn('nama', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('pejabats.nama', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', function ($uq) use ($keyword) {
+                          $uq->where('name', 'like', "%{$keyword}%")
+                            ->orWhere('username', 'like', "%{$keyword}%");
+                      });
+                });
+            })
+            ->filterColumn('jabatan', function ($query, $keyword) {
+                $query->where('pejabats.jabatan', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('alias_jabatan', function ($query, $keyword) {
+                $query->where('pejabats.alias_jabatan', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('alias', function ($query, $keyword) {
+                $query->where('pejabats.alias_jabatan', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('nohp', function ($query, $keyword) {
+                $query->where('pejabats.nohp', 'like', "%{$keyword}%");
+            })
             ->addColumn('action', function ($row) {
                 $btn = '<div class="flex items-center gap-1">';
                 $btn .= '<a href="'.route('e-office.pejabat.edit',$row->id).'" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"><i class="fa fa-edit"></i></a>';

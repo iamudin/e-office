@@ -45,6 +45,7 @@ add_plugin_public_route(['name' => 'e-office.briefing.teruskan', 'method' => 'PO
 add_plugin_public_route(['name' => 'e-office.briefing.balas', 'method' => 'POST', 'path' => '/briefing/{id}/balas', 'controller' => $briefingCtrl, 'function' => 'balas']);
 add_plugin_public_route(['name' => 'e-office.briefing.feedback', 'method' => 'POST', 'path' => '/briefing/disposisi/{id}/feedback', 'controller' => $briefingCtrl, 'function' => 'feedback']);
 add_plugin_public_route(['name' => 'e-office.briefing.validasi', 'method' => 'POST', 'path' => '/briefing/disposisi/{id}/validasi', 'controller' => $briefingCtrl, 'function' => 'validasi']);
+add_plugin_public_route(['name' => 'e-office.briefing.checklist.update', 'method' => 'POST', 'path' => '/briefing/checklist/{id}', 'controller' => $briefingCtrl, 'function' => 'updateChecklist']);
 add_plugin_public_route(['name' => 'e-office.briefing.close', 'method' => 'POST', 'path' => '/briefing/{id}/close', 'controller' => $briefingCtrl, 'function' => 'close']);
 add_plugin_public_route(['name' => 'e-office.briefing.destroy', 'method' => 'DELETE', 'path' => '/briefing/{id}', 'controller' => $briefingCtrl, 'function' => 'destroy']);
 

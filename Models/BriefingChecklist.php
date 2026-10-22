@@ -13,6 +13,7 @@ class BriefingChecklist extends Model
     protected $fillable = [
         'briefing_id',
         'kegiatan',
+        'status',
         'is_checked',
         'penerima_id',
         'checked_by_pejabat_id',

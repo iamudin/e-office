@@ -2,20 +2,22 @@
 
 // ─── Bootstrap earsip config (replaces ServiceProvider mergeConfigFrom) ───
 if (!config('e-office')) {
-    config(['e-office' => [
-        'name'        => 'E-Arsip',
-        'url'         => env('APP_URL_EARSIP', null),
-        'path'        => 'e-office',
-        'logo'        => env('APP_LOGO_EARSIP', '/noimage.webp'),
-        'title'       => env('APP_TITLE_EARSIP', 'e-Arsip'),
-        'description' => env('APP_DESCRIPTION_EARSIP', 'Arsip Surat Masuk Elektronik'),
-        'api'         => [
-            'wa_sender' => [
-                'url'     => env('WA_SENDER_URL', null),
-                'session' => env('WA_SENDER_SESSION', null),
+    config([
+        'e-office' => [
+            'name' => 'E-Arsip',
+            'url' => env('APP_URL_EARSIP', null),
+            'path' => 'e-office',
+            'logo' => env('APP_LOGO_EARSIP', '/noimage.webp'),
+            'title' => env('APP_TITLE_EARSIP', 'e-Arsip'),
+            'description' => env('APP_DESCRIPTION_EARSIP', 'Arsip Surat Masuk Elektronik'),
+            'api' => [
+                'wa_sender' => [
+                    'url' => env('WA_SENDER_URL', null),
+                    'session' => env('WA_SENDER_SESSION', null),
+                ],
             ],
-        ],
-    ]]);
+        ]
+    ]);
 }
 
 // ─── Helper: Get earsip user (lazy-loaded) ───
@@ -23,8 +25,13 @@ if (!function_exists('e_office_user')) {
     function e_office_user()
     {
         static $cached = null;
-        if ($cached === null && session()->has('e_office_user_id')) {
-            $cached = \App\Models\Plugins\EOffice\User::with('pejabat')->find(session('e_office_user_id'));
+        $sessionId = session('e_office_user_id');
+        if (!$sessionId) {
+            $cached = null;
+            return null;
+        }
+        if ($cached === null || $cached->id != $sessionId) {
+            $cached = \App\Models\Plugins\EOffice\User::with('pejabat')->find($sessionId);
         }
         return $cached;
     }
@@ -58,5 +65,13 @@ if (!function_exists('e_office_admin_only')) {
         if (!e_office_user()->isAdmin()) {
             abort(403, 'Hanya admin yang dapat mengakses halaman ini');
         }
+    }
+}
+
+// ─── Helper: Check if briefing feature is enabled via .env ───
+if (!function_exists('e_briefing_enabled')) {
+    function e_briefing_enabled(): bool
+    {
+        return config('e-office.e_briefing_enabled', false);
     }
 }

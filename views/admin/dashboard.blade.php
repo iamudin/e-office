@@ -15,13 +15,12 @@
         }
 
         // Briefing Stats
-        if ($pejabat) {
+        if (e_briefing_enabled() && $pejabat) {
             $isKadis = str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis');
             if ($isKadis) {
-                $stats[] = ['title' => 'Briefing Dibuat', 'value' => \App\Models\Plugins\EOffice\Briefing::where('user_id', $user->id)->count(), 'icon' => 'fa-bullhorn', 'color' => 'bg-purple-500'];
-                $stats[] = ['title' => 'Briefing Aktif', 'value' => \App\Models\Plugins\EOffice\Briefing::where('user_id', $user->id)->where('status', '!=', 'completed')->count(), 'icon' => 'fa-tasks', 'color' => 'bg-pink-500'];
-        $stats[] = ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\EOffice\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'];
-                
+                $stats[] = ['title' => 'Total Briefing Terbit', 'value' => \App\Models\Plugins\EOffice\Briefing::count(), 'icon' => 'fa-bullhorn', 'color' => 'bg-purple-500'];
+                $stats[] = ['title' => 'Briefing Aktif', 'value' => \App\Models\Plugins\EOffice\Briefing::where('status', '!=', 'completed')->count(), 'icon' => 'fa-tasks', 'color' => 'bg-pink-500'];
+                $stats[] = ['title' => 'Total Pejabat', 'value' => \App\Models\Plugins\EOffice\Pejabat::count(), 'icon' => 'fa-users', 'color' => 'bg-indigo-500'];
             } else {
                 $stats[] = ['title' => 'Briefing/Tugas Baru', 'value' => \App\Models\Plugins\EOffice\BriefingDisposisi::where('penerima_id', $pejabat->id)->whereNull('dibaca_pada')->count(), 'icon' => 'fa-bell', 'color' => 'bg-rose-500'];
                 $stats[] = ['title' => 'Total Tugas Diterima', 'value' => \App\Models\Plugins\EOffice\BriefingDisposisi::where('penerima_id', $pejabat->id)->count(), 'icon' => 'fa-tasks', 'color' => 'bg-purple-500'];
@@ -66,9 +65,9 @@
 </div>
 @endif
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 {{ e_briefing_enabled() ? 'lg:grid-cols-2' : '' }} gap-6 mb-6">
     @if(e_office_user() && e_office_user()->canViewSuratMasuk())
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden {{ !e_briefing_enabled() ? 'col-span-full' : '' }}">
         <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <div>
                 <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-history mr-2 text-indigo-500"></i> Riwayat Surat Masuk</h3>
@@ -93,6 +92,7 @@
     </div>
     @endif
 
+    @if(e_briefing_enabled())
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden {{ (e_office_user() && e_office_user()->canViewSuratMasuk()) ? '' : 'col-span-2' }}">
         <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
             <div>
@@ -117,7 +117,7 @@
                     @php
                         $isKadis = str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis');
                         if ($isKadis) {
-                            $latestBriefings = \App\Models\Plugins\EOffice\Briefing::where('user_id', $user->id)->orderBy('created_at', 'desc')->take(5)->get();
+                            $latestBriefings = \App\Models\Plugins\EOffice\Briefing::with(['user.pejabat'])->orderBy('created_at', 'desc')->take(5)->get();
                         } else {
                             $latestBriefings = \App\Models\Plugins\EOffice\BriefingDisposisi::with('briefing', 'pengirim')->where('penerima_id', $pejabat?->id)->orderBy('created_at', 'desc')->take(5)->get();
                         }
@@ -162,6 +162,7 @@
             </table>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 
