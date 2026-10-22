@@ -62,8 +62,10 @@ class BriefingController extends Controller implements HasMiddleware
      */
     protected function isPejabatSatuTingkat($pejabat): bool
     {
-        if (!$pejabat) return false;
-        if (str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis')) return false;
+        if (!$pejabat)
+            return false;
+        if (str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis'))
+            return false;
 
         $kadis = Pejabat::where('alias_jabatan', 'KADIS')->first() ?? Pejabat::whereNull('atasan_id')->first();
         if ($kadis && $pejabat->atasan_id == $kadis->id) {
@@ -335,7 +337,7 @@ class BriefingController extends Controller implements HasMiddleware
 
                 if ($kadis->nohp) {
                     $pesanWaKadis = "*Laporan Penerbitan Briefing/Tugas*\n\n"
-                        . "Yth. {$kadis->nama} ({$kadis->jabatan}),\n\n"
+                        . "Yth. {$kadis->jabatan},\n\n"
                         . "Telah diterbitkan arahan tugas/briefing oleh:\n"
                         . "• Pengirim: *{$pengirimNama}* ({$pengirimJabatan})\n"
                         . "• Judul: *{$briefing->judul}*\n"
