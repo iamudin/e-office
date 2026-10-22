@@ -390,9 +390,23 @@ class BriefingController extends Controller implements HasMiddleware
                 ->where('penerima_id', $pejabat?->id)
                 ->first();
 
+            // Jika bukan kadis dan bukan pembuat, pastikan user memang terdaftar sebagai penerima briefing ini
+            abort_if(!$myDisposisi, 403, 'Akses ditolak. Anda tidak terdaftar sebagai penerima briefing ini.');
+
             if ($myDisposisi && is_null($myDisposisi->dibaca_pada)) {
                 $myDisposisi->update(['dibaca_pada' => now()]);
             }
+        }
+
+        // Filter checklist sesuai hak akses (Bawahan hanya melihat instruksi untuk dirinya sendiri atau bawahannya jika didelegasikan)
+        if ($isKadis || $isPembuat) {
+            $checklistsToView = $briefing->checklists;
+        } else {
+            $downlineIds = $pejabat ? Pejabat::where('atasan_id', $pejabat->id)->pluck('id')->toArray() : [];
+            $visiblePenerimaIds = array_merge([$pejabat?->id], $downlineIds);
+            $checklistsToView = $briefing->checklists->filter(function ($c) use ($visiblePenerimaIds) {
+                return in_array($c->penerima_id, $visiblePenerimaIds) || is_null($c->penerima_id);
+            });
         }
 
         $penerimaSudahAda = $briefing->disposisis->pluck('penerima_id')->filter()->toArray();
@@ -401,7 +415,7 @@ class BriefingController extends Controller implements HasMiddleware
             ->whereNotIn('id', $penerimaSudahAda)
             ->get();
 
-        return view('e-office::admin.briefing.show', compact('briefing', 'isKadis', 'isPembuat', 'myDisposisi', 'semuaPejabat', 'pejabat'));
+        return view('e-office::admin.briefing.show', compact('briefing', 'isKadis', 'isPembuat', 'myDisposisi', 'semuaPejabat', 'pejabat', 'checklistsToView'));
     }
 
     public function teruskan(Request $request, $id)
@@ -478,10 +492,36 @@ class BriefingController extends Controller implements HasMiddleware
                         'message' => 'Ada Tugas/Briefing yang diteruskan dari ' . ($pejabat?->nama ?? e_office_user()->name),
                         'url' => plugin_route('e-office.briefing.show', $briefing->id)
                     ]);
+                    $pesanWaTujuan = "*Penerusan Tugas / Briefing*\n\n"
+                        . "Waktu: " . $disposisi->created_at->translatedFormat('d M Y, H:i') . "\n"
+                        . "Pengirim: *" . ($pejabat?->nama ?? e_office_user()->name) . "* (" . ($pejabat?->jabatan ?? 'Atasan') . ")\n"
+                        . "Judul: *{$briefing->judul}*\n";
+
+                    if (!empty($request->pesan_diteruskan)) {
+                        $pesanWaTujuan .= "Catatan Umum: " . trim($request->pesan_diteruskan) . "\n";
+                    }
+                    if (!empty($request->pesan_khusus[$penerima_id])) {
+                        $pesanWaTujuan .= "Catatan Khusus: " . trim($request->pesan_khusus[$penerima_id]) . "\n";
+                    }
+
+                    if (!empty($request->instruksi_khusus[$penerima_id]) && is_array($request->instruksi_khusus[$penerima_id])) {
+                        $validItems = array_filter($request->instruksi_khusus[$penerima_id], fn($k) => is_string($k) && trim($k) !== '');
+                        if (count($validItems) > 0) {
+                            $pesanWaTujuan .= "\n*Poin-poin Instruksi Kegiatan:*\n";
+                            $no = 1;
+                            foreach ($validItems as $item) {
+                                $pesanWaTujuan .= "{$no}. " . trim($item) . "\n";
+                                $no++;
+                            }
+                        }
+                    }
+
+                    $pesanWaTujuan .= "\nSilakan cek E-Office untuk menindaklanjuti dan mengonfirmasi status tugas:\n" . $notifUrl;
+
                     WaSender::dispatch([
                         'to' => $pejabatTujuan->nohp,
                         'type' => 'text',
-                        'text' => "*Tugas Hari ini*\n\nWaktu: " . $disposisi->created_at->format('d M Y, H:i') . "\nPengirim: " . ($pejabat?->nama ?? e_office_user()->name) . "\n\nSilakan cek E-Office untuk menindaklanjuti tugas ini di link berikut:\n" . $notifUrl,
+                        'text' => $pesanWaTujuan,
                     ]);
                 }
             }
@@ -564,15 +604,16 @@ class BriefingController extends Controller implements HasMiddleware
             'status' => 'required|in:pending,proses,selesai'
         ]);
 
-        $chk = BriefingChecklist::with('briefing')->findOrFail($id);
+        $chk = BriefingChecklist::with('briefing', 'penerima')->findOrFail($id);
         $user = e_office_user();
         $pejabat = $user?->pejabat;
 
         $isKadis = ($pejabat && str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis'));
         $isPembuat = ($chk->briefing->user_id == $user->id);
         $isPenerima = (is_null($chk->penerima_id) || $chk->penerima_id == $pejabat?->id);
+        $isAtasanPenerima = ($pejabat && $chk->penerima && $chk->penerima->atasan_id == $pejabat->id);
 
-        if (!$isKadis && !$isPembuat && !$isPenerima) {
+        if (!$isKadis && !$isPembuat && !$isPenerima && !$isAtasanPenerima) {
             abort(403, 'Anda tidak berwenang mengonfirmasi instruksi ini.');
         }
 
@@ -587,9 +628,20 @@ class BriefingController extends Controller implements HasMiddleware
         ]);
 
         $briefing = $chk->briefing->fresh(['checklists']);
-        $totalChks = $briefing->checklists->count();
-        $selesaiChks = $briefing->checklists->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
-        $prosesChks = $briefing->checklists->where('status', 'proses')->count();
+
+        if (!$isKadis && !$isPembuat) {
+            $downlineIds = $pejabat ? Pejabat::where('atasan_id', $pejabat->id)->pluck('id')->toArray() : [];
+            $visiblePenerimaIds = array_merge([$pejabat?->id], $downlineIds);
+            $statsChks = $briefing->checklists->filter(function ($c) use ($visiblePenerimaIds) {
+                return in_array($c->penerima_id, $visiblePenerimaIds) || is_null($c->penerima_id);
+            });
+        } else {
+            $statsChks = $briefing->checklists;
+        }
+
+        $totalChks = $statsChks->count();
+        $selesaiChks = $statsChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+        $prosesChks = $statsChks->where('status', 'proses')->count();
         $pendingChks = $totalChks - $selesaiChks - $prosesChks;
         $percent = $totalChks > 0 ? round(($selesaiChks / $totalChks) * 100) : 0;
 

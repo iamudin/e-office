@@ -67,9 +67,17 @@
     </div>
 
     {{-- Checklist Progress & Konfirmasi Instruksi --}}
-    @if($briefing->checklists->count() > 0)
     @php
-        $allChks = $briefing->checklists;
+        $checklistsToView = $checklistsToView ?? (
+            ($isKadis || $isPembuat) 
+                ? $briefing->checklists 
+                : $briefing->checklists->filter(fn($c) => $c->penerima_id == $pejabat?->id || is_null($c->penerima_id))
+        );
+    @endphp
+
+    @if($checklistsToView->count() > 0)
+    @php
+        $allChks = $checklistsToView;
         $totalAll = $allChks->count();
         $selesaiAll = $allChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
         $prosesAll = $allChks->where('status', 'proses')->count();
@@ -85,7 +93,11 @@
                     <i class="fa fa-tasks text-indigo-600"></i> Ceklis & Realisasi Instruksi Tugas
                 </h3>
                 <p class="text-xs text-slate-500 mt-1">
-                    Penerima briefing dapat mengonfirmasi status pengerjaan setiap poin instruksi secara mandiri sebagai <strong class="text-amber-600">"Proses"</strong> atau <strong class="text-emerald-600">"Selesai"</strong>.
+                    @if(!$isKadis && !$isPembuat)
+                        Konfirmasi status pengerjaan setiap poin instruksi tugas untuk Anda secara mandiri sebagai <strong class="text-amber-600">"Proses"</strong> atau <strong class="text-emerald-600">"Selesai"</strong>.
+                    @else
+                        Penerima briefing dapat mengonfirmasi status pengerjaan setiap poin instruksi secara mandiri sebagai <strong class="text-amber-600">"Proses"</strong> atau <strong class="text-emerald-600">"Selesai"</strong>.
+                    @endif
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -104,7 +116,7 @@
         {{-- Progress Bar --}}
         <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
-                <span>Tingkat Ketercapaian Seluruh Instruksi</span>
+                <span>{{ (!$isKadis && !$isPembuat) ? 'Tingkat Ketercapaian Tugas Anda' : 'Tingkat Ketercapaian Seluruh Instruksi' }}</span>
                 <span class="text-indigo-600 text-sm" id="stat-percent">{{ $percentAll }}%</span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
@@ -115,7 +127,7 @@
 
         {{-- List Checklist --}}
         @php
-            $grouped = $briefing->checklists->groupBy('penerima_id');
+            $grouped = $checklistsToView->groupBy('penerima_id');
         @endphp
 
         <div class="space-y-6">
@@ -123,12 +135,13 @@
                 @php
                     $isMyGroup = (is_null($penerimaId) || $penerimaId == $pejabat?->id);
                     $penerimaPejabat = $chks->first()->penerima;
+                    $isMySubordinate = ($pejabat && $penerimaPejabat && $penerimaPejabat->atasan_id == $pejabat->id);
                 @endphp
 
-                <div class="rounded-2xl border {{ $isMyGroup ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200/80 bg-slate-50/30' }} p-4 sm:p-5">
-                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b {{ $isMyGroup ? 'border-indigo-100' : 'border-slate-100' }}">
+                <div class="rounded-2xl border {{ $isMyGroup ? 'border-indigo-200 bg-indigo-50/20' : ($isMySubordinate ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200/80 bg-slate-50/30') }} p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b {{ $isMyGroup ? 'border-indigo-100' : ($isMySubordinate ? 'border-teal-100' : 'border-slate-100') }}">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 rounded-xl {{ $isMyGroup ? 'bg-indigo-100 text-indigo-700' : ($isMySubordinate ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-700') }} flex items-center justify-center text-sm font-bold">
                                 {{ strtoupper(substr($penerimaPejabat?->nama ?? 'B', 0, 1)) }}
                             </div>
                             <div>
@@ -136,6 +149,8 @@
                                     {{ $penerimaPejabat?->nama ?? 'Bawahan' }}
                                     @if($penerimaId == $pejabat?->id)
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">Tugas Anda</span>
+                                    @elseif($isMySubordinate)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-600 text-white">Bawahan Anda</span>
                                     @endif
                                 </h4>
                                 <p class="text-[11px] text-slate-500">{{ $penerimaPejabat?->jabatan ?: ($penerimaPejabat?->alias_jabatan ?: 'Staf') }}</p>
@@ -148,7 +163,7 @@
                         @foreach($chks as $chk)
                             @php
                                 $chkStatus = $chk->status ?: ($chk->is_checked ? 'selesai' : 'pending');
-                                $canEditThis = ($briefing->status !== 'completed' && ($isKadis || $isPembuat || $isMyGroup));
+                                $canEditThis = ($briefing->status !== 'completed' && ($isKadis || $isPembuat || $isMyGroup || $isMySubordinate));
                             @endphp
 
                             <div id="chk-row-{{ $chk->id }}" 
@@ -265,7 +280,7 @@
             <div class="p-0 max-h-[600px] overflow-y-auto">
                 <div class="divide-y divide-gray-100">
                     @php
-                        if ($isKadis) {
+                        if ($isKadis || $isPembuat) {
                             $disposisisToView = $briefing->disposisis;
                         } else {
                             $allowedIds = [];
@@ -526,11 +541,28 @@
                 <div x-show="show" x-cloak class="mt-4 pt-4 border-t border-gray-100">
                     <form x-data="{
                         penerima: [],
+                        instruksiKhusus: {},
                         togglePenerima(id) {
                             if (this.penerima.includes(id)) {
                                 this.penerima = this.penerima.filter(i => i !== id);
                             } else {
                                 this.penerima.push(id);
+                                if (!this.instruksiKhusus[id] || this.instruksiKhusus[id].length === 0) {
+                                    this.instruksiKhusus[id] = [''];
+                                }
+                            }
+                        },
+                        addInstruksiKhusus(pejabatId) {
+                            if (!this.instruksiKhusus[pejabatId]) {
+                                this.instruksiKhusus[pejabatId] = [];
+                            }
+                            this.instruksiKhusus[pejabatId].push('');
+                        },
+                        removeInstruksiKhusus(pejabatId, index) {
+                            if (this.instruksiKhusus[pejabatId] && this.instruksiKhusus[pejabatId].length > 1) {
+                                this.instruksiKhusus[pejabatId].splice(index, 1);
+                            } else if (this.instruksiKhusus[pejabatId]) {
+                                this.instruksiKhusus[pejabatId][0] = '';
                             }
                         },
                         selectAll: false,
@@ -539,16 +571,27 @@
                             checkboxes.forEach(cb => {
                                 cb.checked = this.selectAll;
                                 const val = cb.value;
-                                if (this.selectAll && !this.penerima.includes(val)) {
-                                    this.penerima.push(val);
-                                } else if (!this.selectAll && this.penerima.includes(val)) {
-                                    this.penerima = this.penerima.filter(i => i !== val);
+                                if (this.selectAll) {
+                                    if (!this.penerima.includes(val)) {
+                                        this.penerima.push(val);
+                                    }
+                                    if (!this.instruksiKhusus[val] || this.instruksiKhusus[val].length === 0) {
+                                        this.instruksiKhusus[val] = [''];
+                                    }
+                                } else {
+                                    this.penerima = [];
                                 }
                             });
                         }
                     }" action="{{ plugin_route('e-office.briefing.teruskan', $briefing->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                         @csrf
                         
+                        {{-- Arahan Umum Penerusan --}}
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Arahan / Catatan Umum Penerusan (Opsional)</label>
+                            <textarea name="pesan_diteruskan" rows="2" class="w-full rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs py-2 px-3 outline-none resize-none" placeholder="Instruksi umum yang berlaku untuk semua bawahan yang dipilih..."></textarea>
+                        </div>
+
                         <div>
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-sm font-bold text-gray-900"><i class="fa fa-users text-indigo-500 mr-2"></i> Delegasi Spesifik Bawahan</h4>
@@ -570,10 +613,44 @@
                                                 </div>
                                             </div>
                                             
-                                            <div x-show="penerima.includes('{{ $pj->id }}')" class="p-3 space-y-3" style="display: none;">
+                                            <div x-show="penerima.includes('{{ $pj->id }}')" class="p-4 space-y-4 bg-white" style="display: none;">
                                                 
+                                                {{-- LIST INPUT DINAMIS POIN INSTRUKSI KHUSUS PER BAWAHAN --}}
+                                                <div class="bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <label class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                                                            <i class="fa fa-list-ol text-indigo-600"></i> Poin-poin Instruksi Kegiatan
+                                                        </label>
+                                                        <button type="button" @click="addInstruksiKhusus('{{ $pj->id }}')" 
+                                                            class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1">
+                                                            <i class="fa fa-plus"></i> Tambah Poin
+                                                        </button>
+                                                    </div>
+                                                    <p class="text-[11px] text-slate-500 mb-3">
+                                                        Tuliskan instruksi yang wajib dikonfirmasi (<strong>Proses</strong> atau <strong>Selesai</strong>) oleh {{ $pj->nama }}.
+                                                    </p>
+
+                                                    <div class="space-y-2.5">
+                                                        <template x-for="(item, idx) in (instruksiKhusus['{{ $pj->id }}'] || [''])" :key="idx">
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0" x-text="idx + 1"></span>
+                                                                <input type="text" 
+                                                                    :name="'instruksi_khusus[{{ $pj->id }}][]'" 
+                                                                    x-model="instruksiKhusus['{{ $pj->id }}'][idx]" 
+                                                                    placeholder="Contoh: Tindak lanjuti berkas ini dan laporkan hasilnya..." 
+                                                                    class="flex-1 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs py-2 px-3 outline-none bg-white">
+                                                                <button type="button" @click="removeInstruksiKhusus('{{ $pj->id }}', idx)" 
+                                                                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0" 
+                                                                    title="Hapus baris instruksi">
+                                                                    <i class="fa fa-trash-o text-sm"></i>
+                                                                </button>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+
                                                 {{-- Tupoksi --}}
-                                                <div class="bg-white p-2.5 rounded-lg border border-indigo-100">
+                                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                                                     <label class="block text-xs font-bold text-indigo-900 mb-2"><i class="fa fa-check-square-o mr-1"></i> Tugas Pokok & Fungsi</label>
                                                     @if($pj->tupoksis && $pj->tupoksis->count() > 0)
                                                         <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
@@ -591,7 +668,7 @@
 
                                                 {{-- Pesan Khusus --}}
                                                 <div>
-                                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Pesan Khusus</label>
+                                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Pesan Khusus (Opsional)</label>
                                                     <textarea name="pesan_khusus[{{ $pj->id }}]" rows="2" class="w-full rounded-lg border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-xs py-1.5 px-2 border outline-none resize-none" placeholder="Instruksi spesifik..."></textarea>
                                                 </div>
                                                 
