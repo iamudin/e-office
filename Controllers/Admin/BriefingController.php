@@ -11,6 +11,8 @@ use App\Models\Plugins\EOffice\WaSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+use Leazycms\FLC\Models\File;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use App\Http\Controllers\Plugins\EOffice\Middleware\RedirectMiddleware;
@@ -104,6 +106,8 @@ class BriefingController extends Controller implements HasMiddleware
             }
 
             $subordinates = $this->getPejabatSatuTingkat();
+            $today = now()->toDateString();
+            $targetDate = $tanggalSelesai ?: $today;
 
             foreach ($subordinates as $sub) {
                 // Cari briefing yang dibuat pejabat ini dalam rentang tanggal
@@ -116,6 +120,15 @@ class BriefingController extends Controller implements HasMiddleware
 
                 $sub->briefings = $subBriefings;
                 $sub->has_briefing = $subBriefings->isNotEmpty();
+
+                // Cek status peringatan sistem untuk pejabat ini
+                $sentKey = 'briefing_wa_forward_sent_' . $sub->id . '_' . $targetDate;
+                $sentAt = e_office_get_option($sentKey);
+                if (!$sentAt && $targetDate !== $today) {
+                    $sentAt = e_office_get_option('briefing_wa_forward_sent_' . $sub->id . '_' . $today);
+                }
+                $sub->has_warning_sent = !empty($sentAt);
+                $sub->warning_sent_at = $sentAt ? \Carbon\Carbon::parse($sentAt) : null;
 
                 // Kumpulkan seluruh checklist / instruksi dari briefing yang dibuat
                 $allChecklists = $subBriefings->flatMap->checklists;
@@ -131,6 +144,7 @@ class BriefingController extends Controller implements HasMiddleware
             $totalPejabat = $subordinates->count();
             $sudahMembuatCount = $subordinates->where('has_briefing', true)->count();
             $belumMembuatCount = $subordinates->where('has_briefing', false)->count();
+            $diperingatkanCount = $subordinates->where('has_briefing', false)->where('has_warning_sent', true)->count();
             $totalInstruksi = $subordinates->sum('total_checklists');
             $totalSelesaiInstruksi = $subordinates->sum('selesai_checklists');
             $totalProsesInstruksi = $subordinates->sum('proses_checklists');
@@ -142,6 +156,11 @@ class BriefingController extends Controller implements HasMiddleware
                 ->take(10)
                 ->get();
 
+            $jamForward = e_office_get_option('briefing_warning_time_forward', '09:00');
+            $jamAction = e_office_get_option('briefing_warning_time_action', '14:00');
+            $warningEnabled = e_office_get_option('briefing_warning_enabled', '1') == '1';
+            $autoWeekend = e_office_get_option('briefing_warning_auto_weekend', '1') == '1';
+
             return view('e-office::admin.briefing.index', compact(
                 'isKadis',
                 'isTingkatSatu',
@@ -150,6 +169,7 @@ class BriefingController extends Controller implements HasMiddleware
                 'totalPejabat',
                 'sudahMembuatCount',
                 'belumMembuatCount',
+                'diperingatkanCount',
                 'totalInstruksi',
                 'totalSelesaiInstruksi',
                 'totalProsesInstruksi',
@@ -157,7 +177,11 @@ class BriefingController extends Controller implements HasMiddleware
                 'recentBriefings',
                 'tanggal',
                 'tanggalMulai',
-                'tanggalSelesai'
+                'tanggalSelesai',
+                'jamForward',
+                'jamAction',
+                'warningEnabled',
+                'autoWeekend'
             ));
         }
 
@@ -178,6 +202,10 @@ class BriefingController extends Controller implements HasMiddleware
             ->get();
 
         $briefings = $isTingkatSatu ? $briefingsCreated : $briefingsReceived;
+        $jamForward = e_office_get_option('briefing_warning_time_forward', '09:00');
+        $jamAction = e_office_get_option('briefing_warning_time_action', '14:00');
+        $warningEnabled = e_office_get_option('briefing_warning_enabled', '1') == '1';
+        $autoWeekend = e_office_get_option('briefing_warning_auto_weekend', '1') == '1';
 
         return view('e-office::admin.briefing.index', compact(
             'isKadis',
@@ -185,7 +213,11 @@ class BriefingController extends Controller implements HasMiddleware
             'pejabat',
             'briefings',
             'briefingsCreated',
-            'briefingsReceived'
+            'briefingsReceived',
+            'jamForward',
+            'jamAction',
+            'warningEnabled',
+            'autoWeekend'
         ));
     }
 
@@ -398,16 +430,124 @@ class BriefingController extends Controller implements HasMiddleware
             }
         }
 
-        // Filter checklist sesuai hak akses (Bawahan hanya melihat instruksi untuk dirinya sendiri atau bawahannya jika didelegasikan)
+        // 1. Bangun struktur pohon hierarki disposisi dan penerusan tugas
+        $allDisposisis = $briefing->disposisis;
+        $allChecklists = $briefing->checklists;
+
+        $childrenByPengirim = [];
+        foreach ($allDisposisis as $d) {
+            $childrenByPengirim[$d->pengirim_id][] = $d;
+        }
+
+        $penerimaIdsInBriefing = $allDisposisis->pluck('penerima_id')->toArray();
+        $rootDisposisis = $allDisposisis->filter(function($d) use ($penerimaIdsInBriefing) {
+            return !in_array($d->pengirim_id, $penerimaIdsInBriefing);
+        })->sortBy('created_at')->values();
+
+        if ($rootDisposisis->isEmpty() && $allDisposisis->isNotEmpty()) {
+            $rootDisposisis = collect([$allDisposisis->sortBy('created_at')->first()]);
+        }
+
+        // Fungsi rekursif untuk membangun pohon hierarki terstruktur
+        $flattenTree = function($disp, $depth, $ancestorNames, $chainPejabat) use (&$flattenTree, $childrenByPengirim, $allChecklists, $pejabat, $isKadis, $isPembuat) {
+            $res = collect();
+            $penerima = $disp->penerima;
+            $pengirim = $disp->pengirim;
+            $penerimaNama = $penerima?->nama ?? 'Pegawai';
+            $chain = array_merge($ancestorNames, [$penerimaNama]);
+            $pejabatChain = array_merge($chainPejabat, [$penerima]);
+            $hasChildren = isset($childrenByPengirim[$disp->penerima_id]);
+
+            $chks = $allChecklists->where('penerima_id', $disp->penerima_id)->values();
+            $cTotal = $chks->count();
+            $cSelesai = $chks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+            $cProses = $chks->where('status', 'proses')->count();
+            $cPending = $cTotal - $cSelesai - $cProses;
+            $cPercent = $cTotal > 0 ? round(($cSelesai / $cTotal) * 100) : 0;
+
+            $isDirectSub = false;
+            $isNestedSub = false;
+
+            if ($isKadis || $isPembuat) {
+                $isDirectSub = ($depth === 0);
+                $isNestedSub = ($depth > 0);
+            } else {
+                $isDirectSub = ($disp->pengirim_id == $pejabat?->id);
+                $ancestorPejabatIds = collect($chainPejabat)->pluck('id')->toArray();
+                $isNestedSub = in_array($pejabat?->id, $ancestorPejabatIds) && $disp->penerima_id != $pejabat?->id && !$isDirectSub;
+            }
+
+            $childrenDisposisis = $hasChildren ? collect($childrenByPengirim[$disp->penerima_id]) : collect();
+
+            $node = [
+                'id' => $disp->id,
+                'disposisi' => $disp,
+                'pengirim_id' => $disp->pengirim_id,
+                'penerima_id' => $disp->penerima_id,
+                'pengirim' => $pengirim,
+                'penerima' => $penerima,
+                'depth' => $depth,
+                'chain' => $chain,
+                'pejabat_chain' => $pejabatChain,
+                'chain_string' => implode(' ➔ ', $chain),
+                'checklists' => $chks,
+                'stats' => [
+                    'total' => $cTotal,
+                    'selesai' => $cSelesai,
+                    'proses' => $cProses,
+                    'pending' => $cPending,
+                    'percent' => $cPercent,
+                ],
+                'has_children' => $hasChildren,
+                'children_count' => $childrenDisposisis->count(),
+                'is_last_receiver' => !$hasChildren,
+                'is_direct_sub' => $isDirectSub,
+                'is_nested_sub' => $isNestedSub,
+                'is_me' => ($disp->penerima_id == $pejabat?->id),
+            ];
+
+            $res->push($node);
+
+            if ($hasChildren) {
+                foreach ($childrenByPengirim[$disp->penerima_id] as $childDisp) {
+                    $res = $res->merge($flattenTree($childDisp, $depth + 1, $chain, $pejabatChain));
+                }
+            }
+            return $res;
+        };
+
+        $disposisiTreeFlat = collect();
+        foreach ($rootDisposisis as $r) {
+            $pengirimNama = $r->pengirim?->nama ?? 'Pimpinan';
+            $disposisiTreeFlat = $disposisiTreeFlat->merge($flattenTree($r, 0, [$pengirimNama], [$r->pengirim]));
+        }
+
+        $visitedIds = $disposisiTreeFlat->pluck('id')->toArray();
+        $orphanDisposisis = $allDisposisis->filter(fn($d) => !in_array($d->id, $visitedIds));
+        foreach ($orphanDisposisis as $od) {
+            $disposisiTreeFlat = $disposisiTreeFlat->merge($flattenTree($od, 0, [$od->pengirim?->nama ?? 'Pimpinan'], [$od->pengirim]));
+        }
+
+        // 2. Filter checklist untuk halaman utama (Tugas Anda & Bawahan Langsung)
         if ($isKadis || $isPembuat) {
+            $myChecklists = collect();
+            $subordinateChecklists = $disposisiTreeFlat->filter(fn($n) => $n['is_direct_sub'])->pluck('checklists')->flatten();
             $checklistsToView = $briefing->checklists;
         } else {
-            $downlineIds = $pejabat ? Pejabat::where('atasan_id', $pejabat->id)->pluck('id')->toArray() : [];
-            $visiblePenerimaIds = array_merge([$pejabat?->id], $downlineIds);
-            $checklistsToView = $briefing->checklists->filter(function ($c) use ($visiblePenerimaIds) {
-                return in_array($c->penerima_id, $visiblePenerimaIds) || is_null($c->penerima_id);
+            $myChecklists = $briefing->checklists->filter(function ($c) use ($pejabat) {
+                return $c->penerima_id == $pejabat?->id || is_null($c->penerima_id);
             });
+
+            $directSubPenerimaIds = $disposisiTreeFlat->filter(fn($n) => $n['is_direct_sub'])->pluck('penerima_id')->toArray();
+            $subordinateChecklists = $briefing->checklists->filter(function ($c) use ($directSubPenerimaIds) {
+                return in_array($c->penerima_id, $directSubPenerimaIds);
+            });
+
+            $checklistsToView = $myChecklists->merge($subordinateChecklists);
         }
+
+        // 3. Bawahan-bawahannya (Tingkat 2+ sampai penerima terakhir) untuk ditampilkan dalam MODAL
+        $nestedSubordinates = $disposisiTreeFlat->filter(fn($n) => $n['is_nested_sub'])->values();
 
         $penerimaSudahAda = $briefing->disposisis->pluck('penerima_id')->filter()->toArray();
         $semuaPejabat = Pejabat::with('tupoksis')
@@ -415,7 +555,19 @@ class BriefingController extends Controller implements HasMiddleware
             ->whereNotIn('id', $penerimaSudahAda)
             ->get();
 
-        return view('e-office::admin.briefing.show', compact('briefing', 'isKadis', 'isPembuat', 'myDisposisi', 'semuaPejabat', 'pejabat', 'checklistsToView'));
+        return view('e-office::admin.briefing.show', compact(
+            'briefing', 
+            'isKadis', 
+            'isPembuat', 
+            'myDisposisi', 
+            'semuaPejabat', 
+            'pejabat', 
+            'checklistsToView',
+            'myChecklists',
+            'subordinateChecklists',
+            'disposisiTreeFlat',
+            'nestedSubordinates'
+        ));
     }
 
     public function teruskan(Request $request, $id)
@@ -609,7 +761,7 @@ class BriefingController extends Controller implements HasMiddleware
         $pejabat = $user?->pejabat;
 
         $isKadis = ($pejabat && str_contains(strtolower($pejabat->alias_jabatan ?? ''), 'kadis'));
-        $isPembuat = ($chk->briefing->user_id == $user->id);
+        $isPembuat = ($user && $chk->briefing && $chk->briefing->user_id == $user->id);
         $isPenerima = (is_null($chk->penerima_id) || $chk->penerima_id == $pejabat?->id);
         $isAtasanPenerima = ($pejabat && $chk->penerima && $chk->penerima->atasan_id == $pejabat->id);
 
@@ -627,23 +779,44 @@ class BriefingController extends Controller implements HasMiddleware
             'checked_at' => ($isSelesai || $newStatus === 'proses') ? now() : null
         ]);
 
-        $briefing = $chk->briefing->fresh(['checklists']);
+        $briefing = $chk->briefing ? $chk->briefing->fresh(['checklists']) : Briefing::with('checklists')->find($chk->briefing_id);
 
         if (!$isKadis && !$isPembuat) {
             $downlineIds = $pejabat ? Pejabat::where('atasan_id', $pejabat->id)->pluck('id')->toArray() : [];
-            $visiblePenerimaIds = array_merge([$pejabat?->id], $downlineIds);
-            $statsChks = $briefing->checklists->filter(function ($c) use ($visiblePenerimaIds) {
-                return in_array($c->penerima_id, $visiblePenerimaIds) || is_null($c->penerima_id);
-            });
+            $myChks = $briefing->checklists->filter(fn($c) => $c->penerima_id == $pejabat?->id || is_null($c->penerima_id));
+            $subChks = $briefing->checklists->filter(fn($c) => in_array($c->penerima_id, $downlineIds) && $c->penerima_id != $pejabat?->id);
         } else {
-            $statsChks = $briefing->checklists;
+            $myChks = collect();
+            $subChks = $briefing->checklists;
         }
 
-        $totalChks = $statsChks->count();
-        $selesaiChks = $statsChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
-        $prosesChks = $statsChks->where('status', 'proses')->count();
-        $pendingChks = $totalChks - $selesaiChks - $prosesChks;
-        $percent = $totalChks > 0 ? round(($selesaiChks / $totalChks) * 100) : 0;
+        // Stats tugas pribadi (yang diterima)
+        $myTotal = $myChks->count();
+        $mySelesai = $myChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+        $myProses = $myChks->where('status', 'proses')->count();
+        $myPending = $myTotal - $mySelesai - $myProses;
+        $myPercent = $myTotal > 0 ? round(($mySelesai / $myTotal) * 100) : 0;
+
+        // Stats tugas bawahan (yang diteruskan)
+        $subTotal = $subChks->count();
+        $subSelesai = $subChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+        $subProses = $subChks->where('status', 'proses')->count();
+        $subPending = $subTotal - $subSelesai - $subProses;
+        $subPercent = $subTotal > 0 ? round(($subSelesai / $subTotal) * 100) : 0;
+
+        $isTargetMyTask = (is_null($chk->penerima_id) || $chk->penerima_id == $pejabat?->id);
+
+        // Stats khusus orang/penerima terkait yang sedang diupdate
+        $targetPenerimaId = $chk->penerima_id;
+        $targetPersonChks = $briefing->checklists->filter(function($c) use ($targetPenerimaId, $pejabat) {
+            if (is_null($targetPenerimaId)) {
+                return is_null($c->penerima_id) || $c->penerima_id == $pejabat?->id;
+            }
+            return $c->penerima_id == $targetPenerimaId;
+        });
+        $targetPersonTotal = $targetPersonChks->count();
+        $targetPersonSelesai = $targetPersonChks->filter(fn($c) => $c->status === 'selesai' || $c->is_checked)->count();
+        $targetPersonPercent = $targetPersonTotal > 0 ? round(($targetPersonSelesai / $targetPersonTotal) * 100) : 0;
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -652,12 +825,36 @@ class BriefingController extends Controller implements HasMiddleware
                 'is_checked' => $isSelesai,
                 'checked_at' => $chk->checked_at ? $chk->checked_at->translatedFormat('d M Y, H:i') : null,
                 'checked_by' => $pejabat?->nama ?? $user->name,
+                'updated_group' => $isTargetMyTask ? 'my' : 'sub',
+                'penerima_id' => $targetPenerimaId,
+                'person_stats' => [
+                    'penerima_id' => $targetPenerimaId,
+                    'total' => $targetPersonTotal,
+                    'selesai' => $targetPersonSelesai,
+                    'percent' => $targetPersonPercent,
+                    'label' => "{$targetPersonSelesai}/{$targetPersonTotal} Selesai ({$targetPersonPercent}%)"
+                ],
+                'my_stats' => [
+                    'total' => $myTotal,
+                    'selesai' => $mySelesai,
+                    'proses' => $myProses,
+                    'pending' => $myPending,
+                    'percent' => $myPercent,
+                    'label' => "{$mySelesai}/{$myTotal} Selesai ({$myPercent}%)"
+                ],
+                'sub_stats' => [
+                    'total' => $subTotal,
+                    'selesai' => $subSelesai,
+                    'proses' => $subProses,
+                    'pending' => $subPending,
+                    'percent' => $subPercent
+                ],
                 'stats' => [
-                    'total' => $totalChks,
-                    'selesai' => $selesaiChks,
-                    'proses' => $prosesChks,
-                    'pending' => $pendingChks,
-                    'percent' => $percent
+                    'total' => $isTargetMyTask ? $myTotal : $subTotal,
+                    'selesai' => $isTargetMyTask ? $mySelesai : $subSelesai,
+                    'proses' => $isTargetMyTask ? $myProses : $subProses,
+                    'pending' => $isTargetMyTask ? $myPending : $subPending,
+                    'percent' => $isTargetMyTask ? $myPercent : $subPercent
                 ],
                 'message' => 'Status instruksi berhasil diperbarui menjadi ' . strtoupper($newStatus) . '.'
             ]);
@@ -665,6 +862,177 @@ class BriefingController extends Controller implements HasMiddleware
 
         return back()->with('success', 'Status instruksi berhasil diperbarui.');
     }
+
+    /**
+     * Upload dokumen/gambar untuk suatu poin instruksi (Hanya bawahan penerima).
+     */
+     public function uploadChecklistFile(Request $request, $id)
+     {
+         $request->validate([
+             'file' => 'required|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,txt'
+         ], [
+             'file.required' => 'Pilih file dokumen atau gambar untuk diunggah.',
+             'file.max' => 'Ukuran file maksimal adalah 20MB.',
+             'file.mimes' => 'Format file harus berupa dokumen (PDF, Word, Excel, PPT, ZIP/RAR, TXT) atau gambar (JPG, PNG, WEBP).'
+         ]);
+
+         $chk = BriefingChecklist::with('briefing', 'penerima')->findOrFail($id);
+         $user = e_office_user();
+         $pejabat = $user?->pejabat;
+
+         // Hanya bawahan penerima instruksi ini yang dapat mengunggah dokumen
+         if (!$pejabat || $chk->penerima_id != $pejabat->id) {
+             abort(403, 'Hanya bawahan penerima instruksi yang dapat mengunggah dokumen/lampiran.');
+         }
+
+         if ($chk->briefing->status === 'completed') {
+             return response()->json(['success' => false, 'message' => 'Briefing/tugas ini telah selesai dan ditutup.'], 422);
+         }
+
+         try {
+             DB::beginTransaction();
+
+             // 1. Bersihkan file lama milik checklist ini dari database dan storage
+             foreach ($chk->files as $oldFile) {
+                 Cache::forget($oldFile->host . ':media:' . $oldFile->file_name);
+                 Cache::forget(request()->getHost() . ':media:' . $oldFile->file_name);
+                 $oldFile->deleteFile();
+             }
+
+             // Bersihkan juga file orphaned yang terkait purpose atau fileable checklist ini
+             $slugPurpose = str('briefing_checklist_' . $chk->id)->slug();
+             $orphanedFiles = File::where('purpose', $slugPurpose)
+                 ->orWhere(function ($q) use ($chk) {
+                     $q->where('fileable_type', get_class($chk))
+                       ->where('fileable_id', $chk->id);
+                 })
+                 ->get();
+
+             foreach ($orphanedFiles as $orphaned) {
+                 Cache::forget($orphaned->host . ':media:' . $orphaned->file_name);
+                 Cache::forget(request()->getHost() . ':media:' . $orphaned->file_name);
+                 $orphaned->deleteFile();
+             }
+
+             // Jika ada file fisik lampiran lama yang masih tersisa
+             if ($chk->file_lampiran) {
+                 $oldBasename = basename($chk->file_lampiran);
+                 Cache::forget(request()->getHost() . ':media:' . $oldBasename);
+                 $matchingOld = File::where('file_name', $oldBasename)->get();
+                 foreach ($matchingOld as $mOld) {
+                     if (str_contains($mOld->purpose ?? '', 'briefing') || $mOld->fileable_id == $chk->id) {
+                         $mOld->deleteFile();
+                     }
+                 }
+             }
+
+             $file = $request->file('file');
+             $originalName = $file->getClientOriginalName();
+             $fileExt = strtolower($file->getClientOriginalExtension());
+
+             // 2. Simpan file baru tanpa deduplikasi lintas domain/library
+             $fname = $chk->addFile([
+                 'file' => $file,
+                 'purpose' => 'briefing_checklist_' . $chk->id,
+                 'random_name' => true,
+                 'no_duplicate' => true,
+             ]);
+
+             if (!$fname) {
+                 throw new \Exception('Gagal memproses penyimpanan file.');
+             }
+
+             $chk->update([
+                 'file_lampiran' => $fname
+             ]);
+
+             DB::commit();
+
+             return response()->json([
+                 'success' => true,
+                 'file_url' => $fname,
+                 'file_name' => $originalName,
+                 'file_ext' => $fileExt,
+                 'message' => 'Dokumen/gambar lampiran berhasil diunggah.'
+             ]);
+         } catch (\Exception $e) {
+             DB::rollBack();
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Gagal mengunggah file: ' . $e->getMessage()
+             ], 500);
+         }
+     }
+
+     /**
+      * Hapus dokumen/gambar lampiran instruksi (Hanya bawahan penerima).
+      */
+     public function deleteChecklistFile($id)
+     {
+         $chk = BriefingChecklist::with('briefing', 'penerima')->findOrFail($id);
+         $user = e_office_user();
+         $pejabat = $user?->pejabat;
+
+         if (!$pejabat || $chk->penerima_id != $pejabat->id) {
+             abort(403, 'Hanya bawahan penerima instruksi yang dapat menghapus dokumen/lampiran.');
+         }
+
+         if ($chk->briefing->status === 'completed') {
+             return response()->json(['success' => false, 'message' => 'Briefing/tugas ini telah selesai dan ditutup.'], 422);
+         }
+
+         try {
+             DB::beginTransaction();
+
+             foreach ($chk->files as $file) {
+                 Cache::forget($file->host . ':media:' . $file->file_name);
+                 Cache::forget(request()->getHost() . ':media:' . $file->file_name);
+                 $file->deleteFile();
+             }
+
+             $slugPurpose = str('briefing_checklist_' . $chk->id)->slug();
+             $orphanedFiles = File::where('purpose', $slugPurpose)
+                 ->orWhere(function ($q) use ($chk) {
+                     $q->where('fileable_type', get_class($chk))
+                       ->where('fileable_id', $chk->id);
+                 })
+                 ->get();
+
+             foreach ($orphanedFiles as $orphaned) {
+                 Cache::forget($orphaned->host . ':media:' . $orphaned->file_name);
+                 Cache::forget(request()->getHost() . ':media:' . $orphaned->file_name);
+                 $orphaned->deleteFile();
+             }
+
+             if ($chk->file_lampiran) {
+                 $oldBasename = basename($chk->file_lampiran);
+                 Cache::forget(request()->getHost() . ':media:' . $oldBasename);
+                 $matchingOld = File::where('file_name', $oldBasename)->get();
+                 foreach ($matchingOld as $mOld) {
+                     if (str_contains($mOld->purpose ?? '', 'briefing') || $mOld->fileable_id == $chk->id) {
+                         $mOld->deleteFile();
+                     }
+                 }
+             }
+
+             $chk->update([
+                 'file_lampiran' => null
+             ]);
+
+             DB::commit();
+
+             return response()->json([
+                 'success' => true,
+                 'message' => 'Dokumen lampiran berhasil dihapus.'
+             ]);
+         } catch (\Exception $e) {
+             DB::rollBack();
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Gagal menghapus file: ' . $e->getMessage()
+             ], 500);
+         }
+     }
 
     public function feedback(Request $request, $id)
     {
@@ -734,5 +1102,98 @@ class BriefingController extends Controller implements HasMiddleware
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Update jam peringatan WhatsApp oleh Kepala Dinas (Pimpinan) atau Admin
+     */
+    public function updateJamPeringatan(Request $request)
+    {
+        $user = e_office_user();
+        $pejabat = $user?->pejabat;
+
+        $isKadis = false;
+        if ($pejabat && $pejabat->isKadis()) {
+            $isKadis = true;
+        }
+        if ($user?->isAdmin() || $user?->is_kadis()) {
+            $isKadis = true;
+        }
+
+        if (!$isKadis) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Hanya Kepala Dinas (Pimpinan) atau Admin yang berhak mengatur jam peringatan.'
+                ], 403);
+            }
+            abort(403, 'Hanya Kepala Dinas (Pimpinan) atau Admin yang berhak mengatur jam peringatan.');
+        }
+
+        $request->validate([
+            'briefing_warning_time_forward' => 'nullable|string',
+            'briefing_warning_time_action' => 'nullable|string',
+            'briefing_warning_enabled' => 'nullable',
+            'briefing_warning_auto_weekend' => 'nullable',
+            'is_full_setting' => 'nullable',
+        ]);
+
+        $isFullSetting = $request->boolean('is_full_setting') || $request->filled('briefing_warning_time_forward');
+
+        if ($isFullSetting) {
+            $warningEnabled = $request->boolean('briefing_warning_enabled') ? '1' : '0';
+            $autoWeekend = $request->boolean('briefing_warning_auto_weekend') ? '1' : '0';
+            e_office_set_option('briefing_warning_enabled', $warningEnabled);
+            e_office_set_option('briefing_warning_auto_weekend', $autoWeekend);
+        } else {
+            if ($request->has('briefing_warning_enabled')) {
+                $warningEnabled = $request->boolean('briefing_warning_enabled') ? '1' : '0';
+                e_office_set_option('briefing_warning_enabled', $warningEnabled);
+            } else {
+                $warningEnabled = e_office_get_option('briefing_warning_enabled', '1');
+            }
+
+            if ($request->has('briefing_warning_auto_weekend')) {
+                $autoWeekend = $request->boolean('briefing_warning_auto_weekend') ? '1' : '0';
+                e_office_set_option('briefing_warning_auto_weekend', $autoWeekend);
+            } else {
+                $autoWeekend = e_office_get_option('briefing_warning_auto_weekend', '1');
+            }
+        }
+
+        if ($request->filled('briefing_warning_time_forward')) {
+            $jamForward = date('H:i', strtotime($request->briefing_warning_time_forward));
+            e_office_set_option('briefing_warning_time_forward', $jamForward);
+        } else {
+            $jamForward = e_office_get_option('briefing_warning_time_forward', '09:00');
+        }
+
+        if ($request->filled('briefing_warning_time_action')) {
+            $jamAction = date('H:i', strtotime($request->briefing_warning_time_action));
+            e_office_set_option('briefing_warning_time_action', $jamAction);
+        } else {
+            $jamAction = e_office_get_option('briefing_warning_time_action', '14:00');
+        }
+
+        Cache::forget('briefing_reminder_last_run');
+
+        $statusText = ($warningEnabled === '1')
+            ? "Peringatan AKTIF (Batas memberi tugas: {$jamForward} WIB, respon: {$jamAction} WIB)."
+            : "Peringatan DINONAKTIFKAN (HARI LIBUR). Pengiriman WA & peringatan dashboard dinonaktifkan sementara.";
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => "Pengaturan berhasil disimpan! {$statusText}",
+                'data' => [
+                    'briefing_warning_enabled' => $warningEnabled,
+                    'briefing_warning_auto_weekend' => $autoWeekend,
+                    'briefing_warning_time_forward' => $jamForward,
+                    'briefing_warning_time_action' => $jamAction,
+                ]
+            ]);
+        }
+
+        return back()->with('success', "Pengaturan jam & status peringatan berhasil diperbarui! {$statusText}");
     }
 }

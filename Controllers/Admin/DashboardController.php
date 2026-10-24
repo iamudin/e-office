@@ -94,28 +94,66 @@ class DashboardController extends Controller implements HasMiddleware
 public function index(){
     plugin_page_name('Dashboard - E-Office');
     e_office_auth_check();
-    $data = [];
-    if(e_office_user()->is_operator() || e_office_user()->is_kasubag()){
+
+    // Jalankan pemeriksaan pengiriman peringatan WA otomatis dengan cache throttle 3 menit
+    if (e_briefing_enabled()) {
+        try {
+            $lastRun = \Illuminate\Support\Facades\Cache::get('briefing_reminder_last_run');
+            if (!$lastRun || now()->diffInMinutes($lastRun) >= 3) {
+                \Illuminate\Support\Facades\Cache::put('briefing_reminder_last_run', now(), 180);
+                e_office_check_and_send_briefing_reminders();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Briefing reminder check error: ' . $e->getMessage());
+        }
+    }
+
+    $user = e_office_user();
+    $pejabat = $user?->pejabat;
+    $isKadis = false;
+    if ($pejabat && $pejabat->isKadis()) {
+        $isKadis = true;
+    }
+
+    $jamForward = e_office_get_option('briefing_warning_time_forward', '09:00');
+    $jamAction = e_office_get_option('briefing_warning_time_action', '14:00');
+    $warningEnabled = e_office_get_option('briefing_warning_enabled', '1') == '1';
+    $autoWeekend = e_office_get_option('briefing_warning_auto_weekend', '1') == '1';
+
+    $dashboardReminders = [];
+    if (e_briefing_enabled() && $pejabat) {
+        $dashboardReminders = e_office_get_dashboard_reminders($pejabat);
+    }
+
+    $data = [
+        'dashboardReminders' => $dashboardReminders,
+        'jamForward' => $jamForward,
+        'jamAction' => $jamAction,
+        'warningEnabled' => $warningEnabled,
+        'autoWeekend' => $autoWeekend,
+        'isKadis' => $isKadis,
+        'pejabat' => $pejabat,
+    ];
+
+    if($user && ($user->is_operator() || $user->is_kasubag())){
         $data['periode'] = $this->judulPeriode(
             request('tanggal_mulai',date('Y-m-d')),
             request('tanggal_akhir',date('Y-m-d'))
         );
         if(request('cetak_rekap') && request('tanggal_mulai')){
-        $query = Arsip::with('user.pejabat', 'disposisis.pejabat')
-        ->whereBetween('tanggal_terima', [request('tanggal_mulai',date('Y-m-d')),request('tanggal_akhir',date('Y-m-d'))])
-        ->orderBy('nomor_agenda')->get();
-        $html = View::make('e-office::pdf.rekap', [
-                'rekap' => $query,
-                'periode' => $data['periode'],
-        ])->render();
+            $query = Arsip::with('user.pejabat', 'disposisis.pejabat')
+            ->whereBetween('tanggal_terima', [request('tanggal_mulai',date('Y-m-d')),request('tanggal_akhir',date('Y-m-d'))])
+            ->orderBy('nomor_agenda')->get();
+            $html = View::make('e-office::pdf.rekap', [
+                    'rekap' => $query,
+                    'periode' => $data['periode'],
+            ])->render();
             $pdf = PDF::loadHTML($html)->setOption('page-width', '330')->setPaper('a4', 'landscape');
             return $pdf->stream('rekap-'.date('Y-m-d').'.pdf');
-            
+        }
     }
-}
   
-
-    return view('e-office::admin.dashboard',$data);
+    return view('e-office::admin.dashboard', $data);
 }
 
 }

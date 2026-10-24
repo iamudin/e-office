@@ -16,13 +16,39 @@
 
         <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div class="max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold mb-3">
-                    <i class="fa fa-shield"></i> Pimpinan Utama (Monitoring & Evaluasi)
+                <div class="flex flex-wrap items-center gap-2.5 mb-3">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold">
+                        <i class="fa fa-shield"></i> Pimpinan Utama (Monitoring &amp; Evaluasi)
+                    </div>
+
+                    <button type="button" onclick="openModalSettingJam()" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full {{ ($warningEnabled ?? true) ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/40 text-amber-200' : 'bg-rose-500/20 hover:bg-rose-500/30 border-rose-400/40 text-rose-200' }} border text-xs font-semibold transition cursor-pointer shadow-sm active:scale-95">
+                        <i class="fa {{ ($warningEnabled ?? true) ? 'fa-clock-o text-amber-300' : 'fa-bell-slash text-rose-300' }}"></i> Atur Jam &amp; Status Peringatan
+                        <span class="{{ ($warningEnabled ?? true) ? 'bg-amber-400/30 text-white' : 'bg-rose-400/30 text-white' }} text-[10px] px-2 py-0.5 rounded-full font-mono font-bold">
+                            {{ ($warningEnabled ?? true) ? ($jamForward ?? '09:00') . ' • ' . ($jamAction ?? '14:00') . ' WIB' : 'NONAKTIF (LIBUR)' }}
+                        </span>
+                    </button>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Dashboard Monitoring Briefing Harian</h1>
                 <p class="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
                     Pantau kepatuhan pejabat struktural 1 tingkat di bawah pimpinan utama (Sekretaris & Kepala Bidang) dalam menerbitkan arahan tugas dan progres ceklis instruksi bawahan.
                 </p>
+                <div class="mt-3 flex flex-wrap items-center gap-2.5 text-xs text-slate-300">
+                    @if($warningEnabled ?? true)
+                        <div class="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-1 rounded-lg backdrop-blur-xs text-emerald-200">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Peringatan Aktif
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-white/10 border border-white/15 px-2.5 py-1 rounded-lg backdrop-blur-xs">
+                            <i class="fa fa-bell text-amber-300"></i> Batas Beri Tugas: <strong class="text-white font-mono font-bold">{{ $jamForward ?? '09:00' }} WIB</strong>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-white/10 border border-white/15 px-2.5 py-1 rounded-lg backdrop-blur-xs">
+                            <i class="fa fa-bell text-indigo-300"></i> Batas Respon Tugas: <strong class="text-white font-mono font-bold">{{ $jamAction ?? '14:00' }} WIB</strong>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-1.5 bg-rose-500/30 border border-rose-400/40 px-3 py-1 rounded-lg backdrop-blur-xs text-rose-200 font-bold">
+                            <i class="fa fa-bell-slash text-rose-300"></i> Peringatan Sedang Dinonaktifkan (Hari Libur / Cuti)
+                        </div>
+                    @endif
+                </div>
             </div>
 
             {{-- Filter Form --}}
@@ -104,7 +130,11 @@
                 </h3>
                 <p class="text-xs text-rose-600 mt-1 font-medium">
                     @if($belumMembuatCount > 0)
-                        Perlu diingatkan untuk input arahan
+                        @if(isset($diperingatkanCount) && $diperingatkanCount > 0)
+                            <span class="text-emerald-700 font-bold"><i class="fa fa-check-circle text-emerald-600"></i> {{ $diperingatkanCount }} pejabat</span> telah diberi notif peringatan sistem
+                        @else
+                            Perlu diingatkan untuk input arahan
+                        @endif
                     @else
                         Semua pejabat telah membuat
                     @endif
@@ -153,12 +183,15 @@
                     Warna hijau menandakan pejabat telah menerbitkan briefing pada periode ini. Warna merah menandakan belum menerbitkan.
                 </p>
             </div>
-            <div class="flex items-center gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300">
                     <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Sudah Buat Briefing
                 </span>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-semibold border border-rose-300">
                     <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span> Belum Buat Briefing
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                    <i class="fa fa-paper-plane text-emerald-600 text-[10px]"></i> Sudah Diperingatkan Sistem
                 </span>
             </div>
         </div>
@@ -317,37 +350,82 @@
                                     @endif
                                 </div>
                             </div>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-sm flex-shrink-0 animate-pulse">
-                                <i class="fa fa-exclamation-triangle"></i> Belum Menerbitkan
-                            </span>
+                            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-sm flex-shrink-0 animate-pulse">
+                                    <i class="fa fa-exclamation-triangle"></i> Belum Menerbitkan
+                                </span>
+                                @if($sub->has_warning_sent)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs" title="Sistem otomatis telah mengirimkan peringatan WhatsApp & In-App">
+                                        <i class="fa fa-check-circle text-emerald-600"></i> Peringatan Sistem Terkirim
+                                    </span>
+                                @endif
+                            </div>
                         </div>
 
                         {{-- Warning Box --}}
-                        <div class="my-4 p-4 rounded-2xl bg-white/90 border border-rose-200 shadow-xs space-y-2">
-                            <div class="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider">
-                                <i class="fa fa-bell-o"></i> Belum Ada Arahan Tugas
+                        <div class="my-4 p-4 rounded-2xl bg-white/95 border border-rose-200 shadow-xs space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider">
+                                    <i class="fa fa-bell-o"></i> Belum Ada Arahan Tugas
+                                </div>
+                                @if($sub->has_warning_sent)
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                        <i class="fa fa-whatsapp text-emerald-600"></i> WA & Notif Terkirim
+                                    </span>
+                                @endif
                             </div>
                             <p class="text-xs text-rose-950 leading-relaxed">
                                 Pejabat ini <strong>belum membuat / menerbitkan briefing harian</strong> kepada jajaran staf bawahannya pada periode tanggal terpilih.
                             </p>
+
+                            @if($sub->has_warning_sent)
+                                <div class="pt-2 border-t border-rose-100 flex items-center justify-between gap-2 text-[11px] text-emerald-800 bg-emerald-50/70 -mx-4 -mb-4 px-4 py-2.5 rounded-b-2xl border-emerald-200/80 border-t">
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <i class="fa fa-check-circle text-emerald-600 font-bold"></i> Peringatan WhatsApp & In-App otomatis telah dikirim oleh sistem
+                                    </span>
+                                    <span class="font-bold text-emerald-900 bg-white/90 px-2.5 py-0.5 rounded-full border border-emerald-200 text-[10px] flex-shrink-0 shadow-2xs">
+                                        {{ $sub->warning_sent_at ? $sub->warning_sent_at->format('H:i') . ' WIB' : 'Hari ini' }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Action Buttons (WhatsApp Pengingat) --}}
                         <div class="pt-3 border-t border-rose-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <span class="text-xs text-rose-700 font-medium">
-                                <i class="fa fa-clock-o mr-1"></i> Segera ingatkan pejabat ini
-                            </span>
-                            @if($sub->nohp)
-                                @php
-                                    $pesanWa = "Yth. Bapak/Ibu " . $sub->nama . " (" . ($sub->jabatan ?: $sub->alias_jabatan) . "),\n\nMohon untuk dapat menerbitkan arahan tugas dan Briefing harian untuk jajaran bawahan pada aplikasi E-Office untuk periode hari ini.\n\nTerima kasih.\n- Pimpinan Utama";
-                                    $linkWa = "https://wa.me/" . preg_replace('/[^0-9]/', '', $sub->nohp) . "?text=" . urlencode($pesanWa);
-                                @endphp
-                                <a href="{{ $linkWa }}" target="_blank" 
-                                    class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-emerald-600/20">
-                                    <i class="fa fa-whatsapp text-sm"></i> Ingatkan via WhatsApp
-                                </a>
+                            @if($sub->has_warning_sent)
+                                <div class="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
+                                    <i class="fa fa-check-circle text-emerald-600 text-sm"></i>
+                                    <span>Sudah diperingatkan sistem ({{ $sub->warning_sent_at ? $sub->warning_sent_at->format('H:i') . ' WIB' : 'Hari ini' }})</span>
+                                </div>
+                                @if($sub->nohp)
+                                    @php
+                                        $pesanWa = "Yth. Bapak/Ibu " . $sub->nama . " (" . ($sub->jabatan ?: $sub->alias_jabatan) . "),\n\nMohon untuk dapat segera menerbitkan arahan tugas dan Briefing harian untuk jajaran bawahan pada aplikasi E-Office untuk periode hari ini.\n\nTerima kasih.\n- Pimpinan Utama";
+                                        $linkWa = "https://wa.me/" . preg_replace('/[^0-9]/', '', $sub->nohp) . "?text=" . urlencode($pesanWa);
+                                    @endphp
+                                    <a href="{{ $linkWa }}" target="_blank" 
+                                        class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl transition shadow-xs"
+                                        title="Kirim pengingat susulan secara manual via WhatsApp">
+                                        <i class="fa fa-whatsapp text-emerald-600 text-sm"></i> Ingatkan Ulang via WhatsApp
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-400 italic">No. WhatsApp belum diisi</span>
+                                @endif
                             @else
-                                <span class="text-xs text-slate-400 italic">No. WhatsApp belum diisi</span>
+                                <span class="text-xs text-rose-700 font-medium">
+                                    <i class="fa fa-clock-o mr-1"></i> Segera ingatkan pejabat ini
+                                </span>
+                                @if($sub->nohp)
+                                    @php
+                                        $pesanWa = "Yth. Bapak/Ibu " . $sub->nama . " (" . ($sub->jabatan ?: $sub->alias_jabatan) . "),\n\nMohon untuk dapat menerbitkan arahan tugas dan Briefing harian untuk jajaran bawahan pada aplikasi E-Office untuk periode hari ini.\n\nTerima kasih.\n- Pimpinan Utama";
+                                        $linkWa = "https://wa.me/" . preg_replace('/[^0-9]/', '', $sub->nohp) . "?text=" . urlencode($pesanWa);
+                                    @endphp
+                                    <a href="{{ $linkWa }}" target="_blank" 
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-emerald-600/20">
+                                        <i class="fa fa-whatsapp text-sm"></i> Ingatkan via WhatsApp
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-400 italic">No. WhatsApp belum diisi</span>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -624,6 +702,8 @@
         </div>
     </div>
     @endif
+
+@include('e-office::admin.briefing._modal_setting_jam')
 
 </div>
 @endsection

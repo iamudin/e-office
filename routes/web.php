@@ -46,8 +46,19 @@ add_plugin_public_route(['name' => 'e-office.briefing.balas', 'method' => 'POST'
 add_plugin_public_route(['name' => 'e-office.briefing.feedback', 'method' => 'POST', 'path' => '/briefing/disposisi/{id}/feedback', 'controller' => $briefingCtrl, 'function' => 'feedback']);
 add_plugin_public_route(['name' => 'e-office.briefing.validasi', 'method' => 'POST', 'path' => '/briefing/disposisi/{id}/validasi', 'controller' => $briefingCtrl, 'function' => 'validasi']);
 add_plugin_public_route(['name' => 'e-office.briefing.checklist.update', 'method' => 'POST', 'path' => '/briefing/checklist/{id}', 'controller' => $briefingCtrl, 'function' => 'updateChecklist']);
+add_plugin_public_route(['name' => 'e-office.briefing.checklist.upload-file', 'method' => 'POST', 'path' => '/briefing/checklist/{id}/file', 'controller' => $briefingCtrl, 'function' => 'uploadChecklistFile']);
+add_plugin_public_route(['name' => 'e-office.briefing.checklist.delete-file', 'method' => 'POST', 'path' => '/briefing/checklist/{id}/delete-file', 'controller' => $briefingCtrl, 'function' => 'deleteChecklistFile']);
 add_plugin_public_route(['name' => 'e-office.briefing.close', 'method' => 'POST', 'path' => '/briefing/{id}/close', 'controller' => $briefingCtrl, 'function' => 'close']);
 add_plugin_public_route(['name' => 'e-office.briefing.destroy', 'method' => 'DELETE', 'path' => '/briefing/{id}', 'controller' => $briefingCtrl, 'function' => 'destroy']);
+add_plugin_public_route(['name' => 'e-office.briefing.setting-jam', 'method' => 'POST', 'path' => '/briefing/setting-jam', 'controller' => $briefingCtrl, 'function' => 'updateJamPeringatan']);
+
+$monitoringCtrl = 'App\Http\Controllers\Plugins\EOffice\Admin\MonitoringLokasiController';
+
+// ─── Monitoring Lokasi Bawahan ───
+add_plugin_public_route(['name' => 'e-office.monitoring-lokasi.index', 'method' => 'GET', 'path' => '/monitoring-lokasi', 'controller' => $monitoringCtrl, 'function' => 'index']);
+add_plugin_public_route(['name' => 'e-office.monitoring-lokasi.data', 'method' => 'GET', 'path' => '/monitoring-lokasi/data', 'controller' => $monitoringCtrl, 'function' => 'getData']);
+add_plugin_public_route(['name' => 'e-office.monitoring-lokasi.history', 'method' => 'GET', 'path' => '/monitoring-lokasi/history/{pejabatId}', 'controller' => $monitoringCtrl, 'function' => 'getHistory']);
+add_plugin_public_route(['name' => 'e-office.monitoring-lokasi.ping', 'method' => 'POST', 'path' => '/monitoring-lokasi/ping', 'controller' => $monitoringCtrl, 'function' => 'ping']);
 
 // ─── Pejabat (Admin only) ───
 add_route('admin', ['title' => 'Struktur Jabatan', 'name' => 'e-office.struktur-briefing.index', 'icon' => 'fa-sitemap', 'path' => 'e-office/struktur-briefing', 'method' => 'get', 'function' => 'struktur', 'controller' => $pejabatCtrl, 'show_in_sidebar' => true]);

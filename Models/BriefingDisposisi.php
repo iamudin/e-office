@@ -25,12 +25,16 @@ class BriefingDisposisi extends Model
         'balasan_file',
         'feedback_kadis',
         'is_validated_by_atasan',
-        'balasan_history'
+        'balasan_history',
+        'notif_wa_09_at',
+        'notif_wa_14_at'
     ];
 
     protected $casts = [
         'dibaca_pada' => 'datetime',
-        'dibalas_pada' => 'datetime'
+        'dibalas_pada' => 'datetime',
+        'notif_wa_09_at' => 'datetime',
+        'notif_wa_14_at' => 'datetime'
     ];
 
     public static function boot()

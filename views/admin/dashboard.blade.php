@@ -1,6 +1,44 @@
 @extends('e-office::layout.app', ['title' => 'Dashboard'])
 
 @section('content')
+
+{{-- ══════════════════════════════════════════════════════════════════════ --}}
+{{--              PERINGATAN PIMPINAN (WHATSAPP & DASHBOARD REMINDERS)      --}}
+{{-- ══════════════════════════════════════════════════════════════════════ --}}
+@if(!empty($dashboardReminders) && count($dashboardReminders) > 0)
+<div class="space-y-4 mb-6">
+    @foreach($dashboardReminders as $reminder)
+    <div class="bg-gradient-to-r from-rose-600 via-rose-700 to-red-800 rounded-2xl p-5 text-white shadow-lg border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-2xl shadow-inner">
+                <i class="fa {{ $reminder['icon'] ?? 'fa-bell' }} text-amber-300"></i>
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-white text-rose-800 tracking-wider uppercase shadow-sm">
+                        ⚠️ Peringatan Pimpinan
+                    </span>
+                    <span class="text-xs text-rose-100 font-semibold flex items-center gap-1">
+                        <i class="fa fa-clock-o"></i> Batas Waktu: <strong class="text-white">{{ $reminder['deadline'] }} WIB</strong>
+                    </span>
+                </div>
+                <h4 class="text-base sm:text-lg font-bold text-white mt-1">{{ $reminder['title'] }}</h4>
+                <p class="text-xs sm:text-sm text-rose-100 mt-0.5 leading-relaxed">{!! $reminder['message'] !!}</p>
+            </div>
+        </div>
+        <div class="shrink-0 flex items-center sm:self-center">
+            <a href="{{ $reminder['action_url'] }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-rose-700 hover:bg-rose-50 font-bold text-xs sm:text-sm rounded-xl transition shadow-md hover:shadow-lg transform active:scale-95">
+                <span>{{ $reminder['action_text'] }}</span>
+                <i class="fa fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+    @endforeach
+</div>
+@endif
+
+
+
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
     @php
         $stats = [];
@@ -41,7 +79,7 @@
     @endforeach
 </div>
 
-@if(e_office_user()->is_operator() || e_office_user()->is_kasubag())
+@if(e_office_user()?->is_operator() || e_office_user()?->is_kasubag())
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
         <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-print mr-2 text-indigo-500"></i> Cetak Rekapitulasi</h3>
@@ -164,6 +202,7 @@
     </div>
     @endif
 </div>
+
 @endsection
 
 @push('styles')

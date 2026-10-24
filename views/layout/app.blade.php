@@ -33,6 +33,9 @@
     {{-- jQuery (needed for DataTables) --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
+    {{-- Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
     @stack('styles')
 
     <style>
@@ -174,6 +177,25 @@
                     $sidebarMenus[] = ['name' => 'Briefing', 'route' => 'e-office.briefing.index', 'icon' => 'fa-bullhorn', 'match' => 'briefing'];
                 }
 
+                $myPejabat = e_office_user()?->pejabat;
+                $canViewLocation = false;
+                if (e_office_user()) {
+                    if (e_office_user()->isAdmin()) {
+                        $canViewLocation = true;
+                    } elseif ($myPejabat) {
+                        $isKadisRole = str_contains(strtolower($myPejabat->alias_jabatan ?? ''), 'kadis') ||
+                                       $myPejabat->alias_jabatan === 'KADIS' ||
+                                       is_null($myPejabat->atasan_id);
+                        if ($isKadisRole || $myPejabat->hasSubordinates()) {
+                            $canViewLocation = true;
+                        }
+                    }
+                }
+
+                if ($canViewLocation) {
+                    $sidebarMenus[] = ['name' => 'Lokasi Bawahan', 'route' => 'e-office.monitoring-lokasi.index', 'icon' => 'fa-map-marker', 'match' => 'monitoring-lokasi'];
+                }
+
                 if (e_office_user() && e_office_user()->isAdmin()) {
                     $sidebarMenus[] = ['name' => 'Akses User', 'route' => 'e-office.pejabat.index', 'icon' => 'fa-users', 'match' => 'pejabat'];
                     $sidebarMenus[] = ['name' => 'Pengaturan', 'route' => 'e-office.pengaturan.index', 'icon' => 'fa-cog', 'match' => 'pengaturan'];
@@ -205,7 +227,7 @@
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-white truncate">{{ e_office_user()->name ?? '-' }}</p>
                     <p class="text-[11px] text-slate-500 truncate">
-                        {{ e_office_user()?->pejabat?->alias_jabatan ?? e_office_user()->level }}</p>
+                        {{ e_office_user()?->pejabat?->alias_jabatan ?? e_office_user()?->level }}</p>
                 </div>
                 <form method="POST" action="{{ plugin_route('logout') }}">
                     @csrf
@@ -336,6 +358,66 @@
             overlay.classList.add('hidden');
         });
     </script>
+
+    {{-- ═══════════ REALTIME LOCATION & ACTIVITY TRACKER ═══════════ --}}
+    @if(e_office_user())
+    <script>
+        (function() {
+            const pingUrl = "{{ plugin_route('e-office.monitoring-lokasi.ping') }}";
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            function sendLocationPing(lat = null, lng = null, accuracy = null, locName = null) {
+                const activityTitle = document.title ? document.title.replace(/[\r\n\t]+/g, ' ').trim() : 'Mengakses Aplikasi';
+                const currentUrl = window.location.href;
+
+                fetch(pingUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        latitude: lat,
+                        longitude: lng,
+                        accuracy: accuracy,
+                        location_name: locName,
+                        activity: activityTitle,
+                        activity_url: currentUrl
+                    })
+                }).catch(function(err) {
+                    // Silent catch for background heartbeat
+                });
+            }
+
+            function trackUserLocation() {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            const acc = position.coords.accuracy;
+                            sendLocationPing(lat, lng, acc);
+                        },
+                        function(err) {
+                            // Jika izin lokasi belum diberikan, tetap catat aktivitas halaman
+                            sendLocationPing();
+                        },
+                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 }
+                    );
+                } else {
+                    sendLocationPing();
+                }
+            }
+
+            // Jalankan sekali setelah 1.5 detik agar render utama cepat
+            setTimeout(trackUserLocation, 1500);
+
+            // Heartbeat berkala setiap 3.5 menit
+            setInterval(trackUserLocation, 3.5 * 60 * 1000);
+        })();
+    </script>
+    @endif
 
     @stack('scripts')
 </body>
