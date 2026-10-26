@@ -496,3 +496,47 @@ if (!function_exists('e_office_get_dashboard_reminders')) {
         return $reminders;
     }
 }
+
+// ─── Helper: Get application branding name ───
+if (!function_exists('e_office_app_name')) {
+    function e_office_app_name()
+    {
+        return e_office_get_option('e_office_app_name', config('e-office.title', 'e-Arsip'));
+    }
+}
+
+// ─── Helper: Get application branding description ───
+if (!function_exists('e_office_app_description')) {
+    function e_office_app_description()
+    {
+        return e_office_get_option('e_office_app_description', config('e-office.description', 'Sistem Arsip Elektronik & Disposisi'));
+    }
+}
+
+// ─── Helper: Get application branding logo URL ───
+if (!function_exists('e_office_app_logo')) {
+    function e_office_app_logo()
+    {
+        $logo = e_office_get_option('e_office_app_logo', null);
+        if ($logo) {
+            return str_starts_with($logo, 'http') ? $logo : asset($logo);
+        }
+        $configLogo = config('e-office.logo');
+        if ($configLogo && $configLogo !== '/noimage.webp') {
+            return str_starts_with($configLogo, 'http') ? $configLogo : asset($configLogo);
+        }
+        return null;
+    }
+}
+
+// ─── Helper: Get application branding icon / favicon URL ───
+if (!function_exists('e_office_app_icon')) {
+    function e_office_app_icon()
+    {
+        $icon = e_office_get_option('e_office_app_icon', null);
+        if ($icon) {
+            return str_starts_with($icon, 'http') ? $icon : asset($icon);
+        }
+        return null;
+    }
+}

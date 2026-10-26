@@ -158,7 +158,8 @@
             </div>
             <div>
                 <h1 class="text-white font-bold text-base tracking-tight leading-tight">
-                    {{ config('e-office.title', 'E-Office') }}</h1>
+                    {{ config('e-office.title', 'E-Office') }}
+                </h1>
                 <p class="text-slate-500 text-[10px] font-medium uppercase tracking-wider">E-Office System</p>
             </div>
         </div>
@@ -184,8 +185,8 @@
                         $canViewLocation = true;
                     } elseif ($myPejabat) {
                         $isKadisRole = str_contains(strtolower($myPejabat->alias_jabatan ?? ''), 'kadis') ||
-                                       $myPejabat->alias_jabatan === 'KADIS' ||
-                                       is_null($myPejabat->atasan_id);
+                            $myPejabat->alias_jabatan === 'KADIS' ||
+                            is_null($myPejabat->atasan_id);
                         if ($isKadisRole || $myPejabat->hasSubordinates()) {
                             $canViewLocation = true;
                         }
@@ -204,7 +205,7 @@
             @foreach($sidebarMenus as $menu)
                     @php $isActive = str_contains($currentPath, $menu['match']); @endphp
                     <a href="{{ plugin_route($menu['route']) }}" class="group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                       {{ $isActive
+                               {{ $isActive
                 ? 'bg-gradient-to-r from-indigo-600/90 to-indigo-500/90 text-white shadow-lg shadow-indigo-600/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/[.07]' }}">
                         <i
@@ -227,7 +228,8 @@
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-white truncate">{{ e_office_user()->name ?? '-' }}</p>
                     <p class="text-[11px] text-slate-500 truncate">
-                        {{ e_office_user()?->pejabat?->alias_jabatan ?? e_office_user()?->level }}</p>
+                        {{ e_office_user()?->pejabat?->alias_jabatan ?? e_office_user()?->level }}
+                    </p>
                 </div>
                 <form method="POST" action="{{ plugin_route('logout') }}">
                     @csrf
@@ -275,7 +277,8 @@
                     <button class="relative text-gray-400 hover:text-indigo-600 transition-colors" title="Notifikasi">
                         <i class="fa fa-bell text-lg"></i>
                         @if($unreadNotifs > 0)
-                            <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                            <span
+                                class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                                 {{ $unreadNotifs > 99 ? '99+' : $unreadNotifs }}
                             </span>
                         @endif
@@ -288,11 +291,12 @@
                             <div class="max-h-80 overflow-y-auto">
                                 @if($unreadNotifs > 0)
                                     @foreach(\Leazycms\Web\Models\Notification::where('user_id', e_office_user()->id)->where('is_read', false)->latest()->take(5)->get() as $n)
-                                    <a href="{{ route('notifreader', $n->id) }}" class="block p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                                        <p class="text-xs font-semibold text-gray-800 mb-1">{{ $n->title }}</p>
-                                        <p class="text-[11px] text-gray-600 line-clamp-2">{{ $n->message }}</p>
-                                        <p class="text-[10px] text-gray-400 mt-1">{{ $n->created_at->diffForHumans() }}</p>
-                                    </a>
+                                        <a href="{{ route('notifreader', $n->id) }}"
+                                            class="block p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                                            <p class="text-xs font-semibold text-gray-800 mb-1">{{ $n->title }}</p>
+                                            <p class="text-[11px] text-gray-600 line-clamp-2">{{ $n->message }}</p>
+                                            <p class="text-[10px] text-gray-400 mt-1">{{ $n->created_at->diffForHumans() }}</p>
+                                        </a>
                                     @endforeach
                                 @else
                                     <div class="p-4 text-center text-sm text-gray-500">Tidak ada notifikasi baru</div>
@@ -332,7 +336,8 @@
                         <span class="text-sm font-semibold">Terdapat kesalahan:</span>
                     </div>
                     <ul class="list-disc pl-12 text-sm space-y-1">
-                        @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                        @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>@endforeach
                     </ul>
                 </div>
             @endif
@@ -361,62 +366,62 @@
 
     {{-- ═══════════ REALTIME LOCATION & ACTIVITY TRACKER ═══════════ --}}
     @if(e_office_user())
-    <script>
-        (function() {
-            const pingUrl = "{{ plugin_route('e-office.monitoring-lokasi.ping') }}";
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        <script>
+            (function () {
+                const pingUrl = "{{ plugin_route('e-office.monitoring-lokasi.ping') }}";
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            function sendLocationPing(lat = null, lng = null, accuracy = null, locName = null) {
-                const activityTitle = document.title ? document.title.replace(/[\r\n\t]+/g, ' ').trim() : 'Mengakses Aplikasi';
-                const currentUrl = window.location.href;
+                function sendLocationPing(lat = null, lng = null, accuracy = null, locName = null) {
+                    const activityTitle = document.title ? document.title.replace(/[\r\n\t]+/g, ' ').trim() : 'Mengakses Aplikasi';
+                    const currentUrl = window.location.href;
 
-                fetch(pingUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        latitude: lat,
-                        longitude: lng,
-                        accuracy: accuracy,
-                        location_name: locName,
-                        activity: activityTitle,
-                        activity_url: currentUrl
-                    })
-                }).catch(function(err) {
-                    // Silent catch for background heartbeat
-                });
-            }
-
-            function trackUserLocation() {
-                if ('geolocation' in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            const acc = position.coords.accuracy;
-                            sendLocationPing(lat, lng, acc);
+                    fetch(pingUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
                         },
-                        function(err) {
-                            // Jika izin lokasi belum diberikan, tetap catat aktivitas halaman
-                            sendLocationPing();
-                        },
-                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 }
-                    );
-                } else {
-                    sendLocationPing();
+                        body: JSON.stringify({
+                            latitude: lat,
+                            longitude: lng,
+                            accuracy: accuracy,
+                            location_name: locName,
+                            activity: activityTitle,
+                            activity_url: currentUrl
+                        })
+                    }).catch(function (err) {
+                        // Silent catch for background heartbeat
+                    });
                 }
-            }
 
-            // Jalankan sekali setelah 1.5 detik agar render utama cepat
-            setTimeout(trackUserLocation, 1500);
+                function trackUserLocation() {
+                    if ('geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                            function (position) {
+                                const lat = position.coords.latitude;
+                                const lng = position.coords.longitude;
+                                const acc = position.coords.accuracy;
+                                sendLocationPing(lat, lng, acc);
+                            },
+                            function (err) {
+                                // Jika izin lokasi belum diberikan, tetap catat aktivitas halaman
+                                sendLocationPing();
+                            },
+                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 }
+                        );
+                    } else {
+                        sendLocationPing();
+                    }
+                }
 
-            // Heartbeat berkala setiap 3.5 menit
-            setInterval(trackUserLocation, 3.5 * 60 * 1000);
-        })();
-    </script>
+                // Jalankan sekali setelah 1.5 detik agar render utama cepat
+                setTimeout(trackUserLocation, 1500);
+
+                // Heartbeat berkala setiap 3.5 menit
+                setInterval(trackUserLocation, 3.5 * 60 * 1000);
+            })();
+        </script>
     @endif
 
     @stack('scripts')
