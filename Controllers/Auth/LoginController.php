@@ -61,8 +61,8 @@ class LoginController extends Controller implements HasMiddleware
             'username' => 'required|string|max:100',
             'password' => 'required|string|max:128',
             'captcha' => 'required|string|max:10',
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'accuracy' => 'nullable|numeric|min:0|max:100000',
             'location_name' => 'nullable|string|max:500',
         ], [
@@ -70,9 +70,7 @@ class LoginController extends Controller implements HasMiddleware
             'username.max' => 'Username melebihi batas panjang karakter yang diizinkan.',
             'password.required' => 'Password wajib diisi.',
             'captcha.required' => 'Kode captcha wajib diisi.',
-            'latitude.required' => 'Izin akses titik lokasi (GPS) wajib diaktifkan dan diizinkan pada browser Anda.',
             'latitude.between' => 'Titik koordinat latitude tidak valid.',
-            'longitude.required' => 'Izin akses titik lokasi (GPS) wajib diaktifkan dan diizinkan pada browser Anda.',
             'longitude.between' => 'Titik koordinat longitude tidak valid.',
         ]);
 
@@ -134,22 +132,25 @@ class LoginController extends Controller implements HasMiddleware
                 ->withInput($request->only('username'));
         }
 
-        // 6. Validasi Koordinat GPS & Sanitasi Lokasi (Stored XSS Prevention)
-        $lat = (float) $request->input('latitude');
-        $lng = (float) $request->input('longitude');
+        // 6. Validasi Koordinat GPS & Sanitasi Lokasi (jika dikirim)
+        $lat = $request->filled('latitude') ? (float) $request->input('latitude') : null;
+        $lng = $request->filled('longitude') ? (float) $request->input('longitude') : null;
         $acc = $request->filled('accuracy') ? (float) $request->input('accuracy') : null;
 
-        $rawLocName = strip_tags(trim((string) $request->input('location_name', '')));
-        $locName = mb_substr($rawLocName, 0, 255);
+        $formattedLocName = null;
+        if ($lat !== null && $lng !== null) {
+            $rawLocName = strip_tags(trim((string) $request->input('location_name', '')));
+            $locName = mb_substr($rawLocName, 0, 255);
 
-        if ((!$locName || str_contains(strtolower($locName), 'memuat')) && $lat && $lng) {
-            $geoLocName = e_office_reverse_geocode($lat, $lng);
-            if ($geoLocName) {
-                $locName = mb_substr(strip_tags(trim((string) $geoLocName)), 0, 255);
+            if ((!$locName || str_contains(strtolower($locName), 'memuat')) && $lat && $lng) {
+                $geoLocName = e_office_reverse_geocode($lat, $lng);
+                if ($geoLocName) {
+                    $locName = mb_substr(strip_tags(trim((string) $geoLocName)), 0, 255);
+                }
             }
-        }
 
-        $formattedLocName = $locName ?: ('Titik Koordinat (' . round($lat, 5) . ', ' . round($lng, 5) . ')');
+            $formattedLocName = $locName ?: ('Titik Koordinat (' . round($lat, 5) . ', ' . round($lng, 5) . ')');
+        }
 
         // 7. Update User & Pejabat Data
         $user->update([
@@ -164,28 +165,31 @@ class LoginController extends Controller implements HasMiddleware
                 'last_activity' => 'Berhasil Login ke E-Office',
                 'last_activity_url' => url()->current(),
                 'login_at' => now(),
-                'login_lat' => $lat,
-                'login_lng' => $lng,
-                'login_accuracy' => $acc,
-                'login_location_name' => $formattedLocName,
-                'last_lat' => $lat,
-                'last_lng' => $lng,
-                'last_accuracy' => $acc,
-                'last_location_name' => $formattedLocName,
             ];
 
-            \App\Models\Plugins\EOffice\PejabatLocation::create([
-                'pejabat_id' => $pejabat->id,
-                'latitude' => $lat,
-                'longitude' => $lng,
-                'accuracy' => $acc,
-                'location_name' => $formattedLocName,
-                'activity' => 'Login ke E-Office',
-                'activity_url' => plugin_route('login'),
-                'ip_address' => $ip,
-                'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
-                'created_at' => now(),
-            ]);
+            if ($lat !== null && $lng !== null) {
+                $updateData['login_lat'] = $lat;
+                $updateData['login_lng'] = $lng;
+                $updateData['login_accuracy'] = $acc;
+                $updateData['login_location_name'] = $formattedLocName;
+                $updateData['last_lat'] = $lat;
+                $updateData['last_lng'] = $lng;
+                $updateData['last_accuracy'] = $acc;
+                $updateData['last_location_name'] = $formattedLocName;
+
+                \App\Models\Plugins\EOffice\PejabatLocation::create([
+                    'pejabat_id' => $pejabat->id,
+                    'latitude' => $lat,
+                    'longitude' => $lng,
+                    'accuracy' => $acc,
+                    'location_name' => $formattedLocName,
+                    'activity' => 'Login ke E-Office',
+                    'activity_url' => plugin_route('login'),
+                    'ip_address' => $ip,
+                    'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
+                    'created_at' => now(),
+                ]);
+            }
 
             $pejabat->update($updateData);
         }

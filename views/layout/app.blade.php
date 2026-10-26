@@ -342,6 +342,31 @@
                 </div>
             @endif
 
+            {{-- Location Permission Banner for Pejabat --}}
+            @if(e_office_user() && e_office_user()->pejabat)
+                <div id="dash-location-prompt"
+                    class="hidden mb-5 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300/60 dark:border-amber-500/30 text-amber-900 shadow-sm transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center flex-shrink-0 text-base shadow-sm">
+                                <i class="fa fa-map-marker"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-semibold text-amber-950" id="dash-geo-title">Aktivasi Izin Lokasi Pejabat</h4>
+                                <p class="text-[11px] sm:text-xs text-amber-800" id="dash-geo-desc">Untuk pencatatan presensi dinas dan monitoring aktivitas, silakan izinkan akses lokasi pada browser Anda.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+                            <button type="button" id="btn-dash-request-location"
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:scale-95 text-white text-xs font-semibold shadow-md shadow-amber-600/20 transition-all cursor-pointer">
+                                <i class="fa fa-crosshairs text-xs"></i>
+                                <span id="btn-dash-geo-text">Izinkan Lokasi</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             @yield('content')
         </main>
     </div>
@@ -365,13 +390,21 @@
     </script>
 
     {{-- ═══════════ REALTIME LOCATION & ACTIVITY TRACKER ═══════════ --}}
-    @if(e_office_user())
+    @if(e_office_user() && e_office_user()->pejabat)
         <script>
             (function () {
                 const pingUrl = "{{ plugin_route('e-office.monitoring-lokasi.ping') }}";
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const promptBox = document.getElementById('dash-location-prompt');
+                const promptTitle = document.getElementById('dash-geo-title');
+                const promptDesc = document.getElementById('dash-geo-desc');
+                const btnRequest = document.getElementById('btn-dash-request-location');
+                const btnText = document.getElementById('btn-dash-geo-text');
+
+                let isRequesting = false;
 
                 function sendLocationPing(lat = null, lng = null, accuracy = null, locName = null) {
+                    if (!pingUrl || !csrfToken) return;
                     const activityTitle = document.title ? document.title.replace(/[\r\n\t]+/g, ' ').trim() : 'Mengakses Aplikasi';
                     const currentUrl = window.location.href;
 
@@ -390,36 +423,137 @@
                             activity: activityTitle,
                             activity_url: currentUrl
                         })
-                    }).catch(function (err) {
+                    }).catch(function () {
                         // Silent catch for background heartbeat
                     });
                 }
 
-                function trackUserLocation() {
-                    if ('geolocation' in navigator) {
-                        navigator.geolocation.getCurrentPosition(
-                            function (position) {
-                                const lat = position.coords.latitude;
-                                const lng = position.coords.longitude;
-                                const acc = position.coords.accuracy;
-                                sendLocationPing(lat, lng, acc);
-                            },
-                            function (err) {
-                                // Jika izin lokasi belum diberikan, tetap catat aktivitas halaman
-                                sendLocationPing();
-                            },
-                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 }
-                        );
-                    } else {
-                        sendLocationPing();
+                function showPromptBanner(state) {
+                    if (!promptBox) return;
+                    if (state === 'denied') {
+                        promptBox.classList.remove('hidden');
+                        if (promptTitle) promptTitle.textContent = 'Akses Lokasi Diblokir di Browser';
+                        if (promptDesc) promptDesc.textContent = 'Browser Anda memblokir izin lokasi. Silakan klik ikon gembok / setelan di samping address bar, ubah Lokasi menjadi "Izinkan", lalu muat ulang halaman.';
+                        if (btnRequest) btnRequest.style.display = 'none';
+                    } else if (state === 'prompt') {
+                        promptBox.classList.remove('hidden');
+                        if (promptTitle) promptTitle.textContent = 'Aktivasi Izin Lokasi Pejabat';
+                        if (promptDesc) promptDesc.textContent = 'Untuk pencatatan presensi dinas dan monitoring aktivitas, silakan izinkan akses lokasi pada browser Anda.';
+                        if (btnRequest) {
+                            btnRequest.style.display = 'inline-flex';
+                            if (btnText) btnText.textContent = 'Izinkan Lokasi';
+                        }
+                    } else if (state === 'granted') {
+                        promptBox.classList.add('hidden');
                     }
                 }
 
-                // Jalankan sekali setelah 1.5 detik agar render utama cepat
-                setTimeout(trackUserLocation, 1500);
+                function trackUserLocation(isUserGesture = false) {
+                    if (!('geolocation' in navigator)) {
+                        sendLocationPing();
+                        return;
+                    }
+
+                    if (isRequesting) return;
+                    isRequesting = true;
+
+                    if (btnText && isUserGesture) {
+                        btnText.textContent = 'Mendeteksi...';
+                    }
+
+                    const highAccuracyOptions = {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 120000
+                    };
+
+                    const lowAccuracyOptions = {
+                        enableHighAccuracy: false,
+                        timeout: 15000,
+                        maximumAge: 300000
+                    };
+
+                    function onSuccess(position) {
+                        isRequesting = false;
+                        showPromptBanner('granted');
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const acc = position.coords.accuracy;
+                        sendLocationPing(lat, lng, acc);
+                    }
+
+                    function onError(err) {
+                        // Fallback ke low accuracy jika timeout atau position unavailable
+                        if (err.code === 2 || err.code === 3) {
+                            navigator.geolocation.getCurrentPosition(
+                                onSuccess,
+                                function (finalErr) {
+                                    isRequesting = false;
+                                    if (finalErr.code === 1) {
+                                        showPromptBanner('denied');
+                                    }
+                                    sendLocationPing();
+                                },
+                                lowAccuracyOptions
+                            );
+                        } else {
+                            isRequesting = false;
+                            if (err.code === 1) {
+                                showPromptBanner('denied');
+                            }
+                            sendLocationPing();
+                        }
+                    }
+
+                    navigator.geolocation.getCurrentPosition(onSuccess, onError, highAccuracyOptions);
+                }
+
+                // Cek status izin awal via Permissions API
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
+                        if (result.state === 'granted') {
+                            showPromptBanner('granted');
+                            trackUserLocation(false);
+                        } else if (result.state === 'denied') {
+                            showPromptBanner('denied');
+                            sendLocationPing();
+                        } else {
+                            // Status 'prompt'
+                            showPromptBanner('prompt');
+                            // Background ping aktivitas tanpa koordinat terlebih dahulu
+                            sendLocationPing();
+                        }
+
+                        result.onchange = function () {
+                            if (this.state === 'granted') {
+                                showPromptBanner('granted');
+                                trackUserLocation(false);
+                            } else if (this.state === 'denied') {
+                                showPromptBanner('denied');
+                            }
+                        };
+                    }).catch(function () {
+                        trackUserLocation(false);
+                    });
+                } else {
+                    // Browser tanpa Permissions API (Safari lama / webview)
+                    setTimeout(function () {
+                        trackUserLocation(false);
+                    }, 1500);
+                }
+
+                // User Gesture tombol izin lokasi pada dashboard
+                if (btnRequest) {
+                    btnRequest.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        trackUserLocation(true);
+                    });
+                }
 
                 // Heartbeat berkala setiap 3.5 menit
-                setInterval(trackUserLocation, 3.5 * 60 * 1000);
+                setInterval(function () {
+                    trackUserLocation(false);
+                }, 3.5 * 60 * 1000);
             })();
         </script>
     @endif
